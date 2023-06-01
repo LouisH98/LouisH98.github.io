@@ -12,14 +12,15 @@ const thingsIDo = [
 export function Greeting({
   onGreetingFinished,
 }: {
-  onGreetingFinished: () => void;
+  onGreetingFinished?: () => void;
 }) {
   const greetingElem = useRef<HTMLHeadingElement | null>(null);
   function typeGreeting() {
     // @ts-ignore - unfortunately, the lib types aren't coming through
     const instance = new TypeIt(greetingElem.current, {
-      speed: 25,
+      speed: 20,
       afterComplete: onGreetingFinished,
+      lifeLike: true,
     });
 
     instance.pause(1000).delete("#thing");
@@ -28,7 +29,7 @@ export function Greeting({
       const isLast = index === thingsIDo.length - 1;
       instance
         .type(thing)
-        .pause(1000)
+        .pause(650)
         .delete(isLast ? 0 : thing.length);
     });
 
