@@ -8,6 +8,7 @@ import {
 } from "../ui/card";
 import Image from "next/image";
 import styles from "./Projects.module.css";
+import React from "react";
 
 type Project = {
   title: string;
@@ -36,7 +37,13 @@ const projects: Project[] = [
   },
 ];
 
-function ProjectCard({ project, style }: { project: Project; style: any }) {
+function ProjectCard({
+  project,
+  style,
+}: {
+  project: Project;
+  style: React.CSSProperties;
+}) {
   return (
     <>
       <Card
