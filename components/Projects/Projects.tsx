@@ -52,7 +52,7 @@ function ProjectCard({
           "m-2",
           "cursor-pointer",
           styles["slide-in-blurred-left"],
-          "w-64"
+          "w-80"
         )}
       >
         <CardHeader>
