@@ -9,12 +9,17 @@ const thingsIDo = [
   "things I've worked on...",
 ];
 
-export function Greeting() {
+export function Greeting({
+  onGreetingFinished,
+}: {
+  onGreetingFinished: () => void;
+}) {
   const greetingElem = useRef<HTMLHeadingElement | null>(null);
   function typeGreeting() {
     // @ts-ignore - unfortunately, the lib types aren't coming through
     const instance = new TypeIt(greetingElem.current, {
       speed: 25,
+      afterComplete: onGreetingFinished,
     });
 
     instance.pause(1000).delete("#thing");
@@ -36,11 +41,9 @@ export function Greeting() {
 
   return (
     <>
-      <h1
-        ref={greetingElem}
-        className=" p-[8vw] text-[3vw] lg:p-28 lg:text-4xl"
-      >
-        Hey! I&apos;m Louis. <br /> Here are some{" "}
+      <h1 ref={greetingElem} className="p-[8vw] text-[4vw] lg:p-28 lg:text-5xl">
+        Hey! I&apos;m Louis. 👋
+        <br /> Here are some{" "}
         <span id="thing">experiments I&apos;ve played with.</span>
       </h1>
     </>
