@@ -10,10 +10,10 @@ const thingsIDo = [
 ];
 
 export function Greeting() {
-  const greetingElem = useRef<HTMLElement | null>(null);
+  const greetingElem = useRef<HTMLHeadingElement | null>(null);
   function typeGreeting() {
     // @ts-ignore - unfortunately, the lib types aren't coming through
-    const instance = new TypeIt(".greeting", {
+    const instance = new TypeIt(greetingElem.current, {
       speed: 25,
     });
 
@@ -36,7 +36,10 @@ export function Greeting() {
 
   return (
     <>
-      <h1 className=" p-[8vw] text-[3vw] lg:p-28 lg:text-4xl">
+      <h1
+        ref={greetingElem}
+        className=" p-[8vw] text-[3vw] lg:p-28 lg:text-4xl"
+      >
         Hey! I&apos;m Louis. <br /> Here are some{" "}
         <span id="thing">experiments I&apos;ve played with.</span>
       </h1>
