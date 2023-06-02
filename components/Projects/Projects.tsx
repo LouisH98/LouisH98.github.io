@@ -19,9 +19,12 @@ type Project = {
 
 const projects: Project[] = [
   {
-    title: "Next.js",
-    description: "The React Framework for Production",
-    url: "https://nextjs.org",
+    title: "The Screen",
+    description:
+      "A framework for building digital art for the Pimoroni Unicorn Hat HD.",
+    url: "https://github.com/LouisH98/the-screen",
+    image:
+      "https://raw.githubusercontent.com/LouisH98/the-screen/master/images/pong.GIF?raw=true",
   },
   {
     title: "Vercel",
@@ -54,12 +57,14 @@ function ProjectCard({
           styles["slide-in-blurred-left"],
           "w-80"
         )}
+        style={{ backdropFilter: "blur(40px)" }}
+        onClick={() => window.open(project.url, "_blank")}
       >
         <CardHeader>
           <CardTitle>{project.title}</CardTitle>
           <CardDescription>{project.description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 m-0">
           {project.image && (
             <Image
               unoptimized

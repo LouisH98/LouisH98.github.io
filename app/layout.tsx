@@ -8,14 +8,17 @@ export const metadata = {
   description: "Louis Holdsworth's personal website",
 };
 
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html className="dark" lang="en">
+    <html suppressHydrationWarning className="dark" lang="en">
       <body className={inter.className}>{children}</body>
     </html>
+
   );
 }
+
