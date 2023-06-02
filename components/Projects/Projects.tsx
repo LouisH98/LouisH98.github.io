@@ -50,7 +50,6 @@ function ProjectCard({
   return (
     <>
       <Card
-        style={style}
         className={cn(
           "m-2",
           "cursor-pointer",

@@ -15,6 +15,7 @@ export default function Home() {
   return (
     <main className={cn("h-screen", "select-none")}>
       <div
+        suppressHydrationWarning
         className="absolute blur-lg pointer-events-none"
         style={{ zIndex: -1 }}
       >

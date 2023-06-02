@@ -101,8 +101,6 @@ function drawGrid(p5: p5Types, grid: boolean[][]) {
 }
 
 function handleTouchMoved(p5: p5Types) {
-  console.log(p5);
-
   const x = Math.floor(p5.mouseX / (p5.width / grid[0].length));
   const y = Math.floor(p5.mouseY / (p5.height / grid.length));
 
