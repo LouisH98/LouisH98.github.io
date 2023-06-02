@@ -50,13 +50,13 @@ function ProjectCard({
   return (
     <>
       <Card
+        style={{ ...style, backdropFilter: "blur(40px)" }}
         className={cn(
           "m-2",
           "cursor-pointer",
           styles["slide-in-blurred-left"],
           "w-80"
         )}
-        style={{ backdropFilter: "blur(40px)" }}
         onClick={() => window.open(project.url, "_blank")}
       >
         <CardHeader>
