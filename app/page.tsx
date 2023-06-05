@@ -5,6 +5,7 @@ import { Greeting } from "@/components/Greeting";
 import { Projects } from "@/components/Projects";
 import { cn } from "@/lib/utils";
 import { useSessionStorage } from "@/utils/hooks/useSessionStorage";
+import { useCallback } from "react";
 
 export default function Home() {
   const [showProjects, setShowProjects] = useSessionStorage(
@@ -21,7 +22,12 @@ export default function Home() {
       >
         <GameOfLife />
       </div>
-      <Greeting onGreetingFinished={() => setShowProjects(true)} />
+      <Greeting
+        onGreetingFinished={useCallback(
+          () => setShowProjects(true),
+          [setShowProjects]
+        )}
+      />
 
       {showProjects && (
         <Projects

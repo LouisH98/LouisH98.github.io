@@ -40,7 +40,7 @@ export function Greeting({
     });
 
     instance.go();
-  }, [thingElem, onGreetingFinished]);
+  }, [onGreetingFinished]);
 
   useEffect(() => {
     typeGreeting();
