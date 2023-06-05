@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import TypeIt from "typeit";
 
 const thingsIDo = [
@@ -15,7 +15,7 @@ export function Greeting({
   onGreetingFinished?: () => void;
 }) {
   const greetingElem = useRef<HTMLHeadingElement | null>(null);
-  function typeGreeting() {
+  const typeGreeting = useCallback(() => {
     // @ts-ignore - unfortunately, the lib types aren't coming through
     const instance = new TypeIt(greetingElem.current, {
       speed: 20,
@@ -34,11 +34,11 @@ export function Greeting({
     });
 
     instance.go();
-  }
+  }, [onGreetingFinished]);
 
   useEffect(() => {
     typeGreeting();
-  }, []);
+  }, [typeGreeting]);
 
   return (
     <>

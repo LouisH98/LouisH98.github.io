@@ -6,9 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import Image from "next/image";
 import styles from "./Projects.module.css";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 type Project = {
   title: string;
@@ -27,16 +26,18 @@ const projects: Project[] = [
       "https://raw.githubusercontent.com/LouisH98/the-screen/master/images/pong.GIF?raw=true",
   },
   {
-    title: "Vercel",
-    description: "Develop. Preview. Ship.",
-    image: "https://vercel.com/twitter-card.png",
-    url: "https://vercel.com",
+    title: "LovePrint",
+    description:
+      "A WiFi connected reciept printer. Write messages and draw images from anywhere!",
+    image: "./project-images/loveprint.png",
+    url: "https://github.com/LouisH98/loveprint-web-client",
   },
   {
-    title: "Vercel2",
-    description: "Develop. Preview. Ship.",
-    image: "https://vercel.com/twitter-card.png",
-    url: "https://vercel.com",
+    title: "Make Me a Game (alpha)",
+    description:
+      "Harness the power of generative AI to create the game of your dreams! (as long as it's pong or something like that)",
+    image: "./project-images/make-me-a-game.png",
+    url: "https://make-me-a-game.vercel.app/",
   },
 ];
 
@@ -47,15 +48,26 @@ function ProjectCard({
   project: Project;
   style: React.CSSProperties;
 }) {
+  const [animationComplete, setAnimationComplete] = useState(false);
+
+  // TODO: This isn't scalable - find a way to get if the animations are complete, or just a different way of removing the class
+  useEffect(() => {
+    setTimeout(() => {
+      setAnimationComplete(true);
+    }, 1000);
+  }, []);
+
   return (
     <>
       <Card
-        style={{ ...style, backdropFilter: "blur(40px)" }}
+        style={{
+          ...style,
+          backdropFilter: "blur(40px)",
+        }}
         className={cn(
-          "m-2",
-          "cursor-pointer",
-          styles["slide-in-blurred-left"],
-          "w-80"
+          "m-2 cursor-pointer w-80 will-change-transform",
+          !animationComplete && styles["slide-in-blurred-left"],
+          "motion-safe:hover:scale-105 transition-transform	 transform-gpu"
         )}
         onClick={() => window.open(project.url, "_blank")}
       >
@@ -63,14 +75,12 @@ function ProjectCard({
           <CardTitle>{project.title}</CardTitle>
           <CardDescription>{project.description}</CardDescription>
         </CardHeader>
-        <CardContent className="p-0 m-0">
+        <CardContent className="p-1">
           {project.image && (
-            <Image
-              unoptimized
-              alt={`Preview of ${project.title}`}
+            <img
+              alt={`Preview image for ${project.title}`}
               src={project.image}
-              width={300}
-              height={150}
+              className="p-3"
             />
           )}
         </CardContent>
@@ -85,11 +95,7 @@ export function Projects({ ...props }) {
       <div {...props}>
         <section
           className={cn(
-            "w-full",
-            "flex",
-            "flex-row",
-            "justify-center",
-            "flex-wrap"
+            "w-full flex flex-row justify-center flex-wrap items-start"
           )}
         >
           {projects.map((project, index) => (
