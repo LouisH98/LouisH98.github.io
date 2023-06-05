@@ -15,7 +15,11 @@ export function Greeting({
   onGreetingFinished?: () => void;
 }) {
   const greetingElem = useRef<HTMLHeadingElement | null>(null);
+  const thingElem = useRef<HTMLHeadingElement | null>(null);
+
   const typeGreeting = useCallback(() => {
+    if (!thingElem.current) return;
+
     // @ts-ignore - unfortunately, the lib types aren't coming through
     const instance = new TypeIt(greetingElem.current, {
       speed: 20,
@@ -23,7 +27,9 @@ export function Greeting({
       lifeLike: true,
     });
 
-    instance.pause(1000).delete("#thing");
+    const thingTextLength = thingElem.current.innerText.length;
+
+    instance.pause(1000).delete(thingTextLength);
 
     thingsIDo.forEach((thing, index) => {
       const isLast = index === thingsIDo.length - 1;
@@ -34,7 +40,7 @@ export function Greeting({
     });
 
     instance.go();
-  }, [onGreetingFinished]);
+  }, [thingElem, onGreetingFinished]);
 
   useEffect(() => {
     typeGreeting();
@@ -45,7 +51,7 @@ export function Greeting({
       <h1 ref={greetingElem} className="p-[8vw] text-[4vw] lg:p-28 lg:text-5xl">
         Hey! I&apos;m Louis. 👋
         <br /> Here are some{" "}
-        <span id="thing">experiments I&apos;ve played with.</span>
+        <span ref={thingElem}>experiments I&apos;ve played with.</span>
       </h1>
     </>
   );
