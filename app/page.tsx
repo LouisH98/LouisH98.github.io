@@ -13,8 +13,15 @@ export default function Home() {
     false
   );
 
+  const handleClick = useCallback(() => {
+    setShowProjects(true);
+  }, [setShowProjects]);
+
   return (
-    <main className={cn("h-screen", "select-none")}>
+    <main 
+      className={cn("h-screen", "select-none")}
+      onClick={handleClick}
+    >
       <div
         suppressHydrationWarning
         className="absolute blur-lg pointer-events-none"
