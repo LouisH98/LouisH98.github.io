@@ -24,8 +24,8 @@ const projects: Project[] = [
     title: "Print Scheduler",
     description:
       "A next-based web app for optimally scheduling 3D printer jobs.",
-    url: "print-scheduler.vercel.app",
-    image: "./project-images/print-scheduler.png",
+    url: "https://print-scheduler.vercel.app",
+    image: "./project-images/print-scheduler/lane.png",
     contentFile: "print-scheduler.md",
   },
   {
@@ -85,21 +85,23 @@ function ProjectCard({
             backdropFilter: "blur(40px)",
           }}
           className={cn(
-            "m-2 cursor-pointer w-80 will-change-transform",
+            "m-2 cursor-pointer w-80 h-96 will-change-transform flex flex-col",
             !animationComplete && styles["slide-in-blurred-left"],
             "motion-safe:hover:scale-105 transition-transform transform-gpu"
           )}
         >
           <CardHeader>
-            <CardTitle>{project.title}</CardTitle>
+            <motion.div layoutId={`project-title-${project.title}`}>
+              <CardTitle>{project.title}</CardTitle>
+            </motion.div>
             <CardDescription>{project.description}</CardDescription>
           </CardHeader>
-          <CardContent className="p-1">
+          <CardContent className="p-1 flex-1 flex items-center justify-center overflow-hidden">
             {project.image && (
               <img
                 alt={`Preview image for ${project.title}`}
                 src={project.image}
-                className="p-3"
+                className="max-h-full max-w-full object-contain rounded-lg"
               />
             )}
           </CardContent>

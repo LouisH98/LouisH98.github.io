@@ -78,7 +78,12 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between p-6 border-b">
               <div className="flex items-center gap-4">
-                <h2 className="text-xl font-semibold">{title}</h2>
+                <motion.h2 
+                  layoutId={layoutId ? `project-title-${title}` : undefined}
+                  className="text-xl font-semibold"
+                >
+                  {title}
+                </motion.h2>
                 <a
                   href={url}
                   target="_blank"
@@ -98,7 +103,12 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1">
+            <motion.div 
+              className="p-6 overflow-y-auto flex-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+            >
               {markdownContent ? (
                 <div className="prose prose-invert max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -110,7 +120,7 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
                   Content coming soon...
                 </div>
               )}
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         </motion.div>
