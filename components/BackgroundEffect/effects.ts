@@ -2,6 +2,7 @@ import { GameOfLife } from "@/components/GameOfLife";
 import { Boids } from "@/components/Boids";
 import { FlowField } from "@/components/FlowField";
 import { VectorField } from "@/components/VectorField";
+import { RippleField } from "@/components/RippleField";
 import { EffectComponent } from "./types";
 
 export const availableEffects: EffectComponent[] = [
@@ -20,6 +21,10 @@ export const availableEffects: EffectComponent[] = [
   {
     name: "Vector Field",
     component: VectorField,
+  },
+  {
+    name: "Ripple Field",
+    component: RippleField,
   },
 ];
 

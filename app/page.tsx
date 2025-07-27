@@ -41,7 +41,8 @@ export default function Home() {
           "absolute pointer-events-none",
           currentEffect === "Boids" ? "blur-sm" : 
           currentEffect === "Flow Field" ? "blur-sm" :
-          currentEffect === "Vector Field" ? "blur-sm" : "blur-lg"
+          currentEffect === "Vector Field" ? "blur-sm" :
+          currentEffect === "Ripple Field" ? "blur-sm" : "blur-lg"
         )}
         style={{ zIndex: -1 }}
       >
