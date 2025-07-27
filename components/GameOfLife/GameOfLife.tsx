@@ -77,7 +77,7 @@ function iterateGrid(grid: boolean[][]) {
   return newGrid;
 }
 
-function drawGrid(p5: p5Types, grid: boolean[][]) {
+function drawGrid(p5: any, grid: boolean[][]) {
   const width = p5.width;
   const height = p5.height;
 
@@ -104,7 +104,7 @@ function drawGrid(p5: p5Types, grid: boolean[][]) {
   }
 }
 
-function handleTouchMoved(p5: p5Types) {
+function handleTouchMoved(p5: any) {
   const x = Math.floor(p5.mouseX / (p5.width / grid[0].length));
   const y = Math.floor(p5.mouseY / (p5.height / grid.length));
 
@@ -122,7 +122,7 @@ function handleTouchMoved(p5: p5Types) {
   }
 }
 
-function handleWindowResized(p5: p5Types) {
+function handleWindowResized(p5: any) {
   const windowWidth = window.innerWidth;
   const windowHeight = window.innerHeight;
   p5.resizeCanvas(windowWidth, windowHeight);
@@ -146,7 +146,7 @@ function handleWindowResized(p5: p5Types) {
 export function GameOfLife({ paused = false }: { paused?: boolean }) {
   targetPauseState = paused;
   
-  const setup = (p5: p5Types, canvasParentRef: Element) => {
+  const setup = (p5: any, canvasParentRef: Element) => {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
     p5.createCanvas(windowWidth, windowHeight).parent(canvasParentRef);
@@ -165,7 +165,7 @@ export function GameOfLife({ paused = false }: { paused?: boolean }) {
     seedGrid(grid);
   };
 
-  const draw = (p5: p5Types) => {
+  const draw = (p5: any) => {
     p5.background(0);
     
     // Lerp current speed towards target
