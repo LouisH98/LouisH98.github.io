@@ -48,7 +48,7 @@ export function Greeting({
 
   return (
     <>
-      <h1 ref={greetingElem} className="p-[8vw] text-[4vw] lg:p-28 lg:text-5xl">
+      <h1 ref={greetingElem} className="p-[8vw] text-[4vw] lg:p-16  lg:text-5xl">
         Hey! I&apos;m Louis. 👋
         <br /> Here are some{" "}
         <span ref={thingElem}>experiments I&apos;ve played with.</span>

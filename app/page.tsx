@@ -5,13 +5,14 @@ import { Greeting } from "@/components/Greeting";
 import { Projects } from "@/components/Projects";
 import { cn } from "@/lib/utils";
 import { useSessionStorage } from "@/utils/hooks/useSessionStorage";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 export default function Home() {
   const [showProjects, setShowProjects] = useSessionStorage(
     "showProjects",
     false
   );
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleClick = useCallback(() => {
     setShowProjects(true);
@@ -27,7 +28,7 @@ export default function Home() {
         className="absolute blur-lg pointer-events-none"
         style={{ zIndex: -1 }}
       >
-        <GameOfLife />
+        <GameOfLife paused={isModalOpen} />
       </div>
       <Greeting
         onGreetingFinished={useCallback(
@@ -39,6 +40,7 @@ export default function Home() {
       {showProjects && (
         <Projects
           className={cn("w-screen", "flex", "flex-col", "justify-around")}
+          onModalStateChange={setIsModalOpen}
         />
       )}
     </main>

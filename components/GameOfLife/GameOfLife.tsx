@@ -12,6 +12,10 @@ const aliveCellColor = [7, 201, 240];
 
 const targetSpeed = 60;
 let grid: boolean[][] = [];
+let targetPauseState = false;
+let currentSpeed = 1.0;
+let frameCounter = 0;
+const lerpSpeed = 0.05;
 
 let brightness = 0;
 
@@ -139,7 +143,9 @@ function handleWindowResized(p5: p5Types) {
   }
 }
 
-export function GameOfLife() {
+export function GameOfLife({ paused = false }: { paused?: boolean }) {
+  targetPauseState = paused;
+  
   const setup = (p5: p5Types, canvasParentRef: Element) => {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
@@ -150,7 +156,9 @@ export function GameOfLife() {
     p5.frameRate(targetSpeed);
 
     setInterval(() => {
-      seedGrid(grid);
+      if (currentSpeed > 0.1) {
+        seedGrid(grid);
+      }
     }, 30000);
 
     initGrid(windowWidth, windowHeight, 10);
@@ -159,7 +167,18 @@ export function GameOfLife() {
 
   const draw = (p5: p5Types) => {
     p5.background(0);
-    grid = iterateGrid(grid);
+    
+    // Lerp current speed towards target
+    const targetSpeedValue = targetPauseState ? 0.0 : 1.0;
+    currentSpeed += (targetSpeedValue - currentSpeed) * lerpSpeed;
+    
+    // Only iterate grid based on lerped speed
+    frameCounter += currentSpeed;
+    if (frameCounter >= 1.0) {
+      grid = iterateGrid(grid);
+      frameCounter = 0;
+    }
+    
     drawGrid(p5, grid);
   };
 

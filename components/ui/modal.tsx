@@ -1,0 +1,120 @@
+import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { X, ArrowRight } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  url: string;
+  layoutId?: string;
+  children?: React.ReactNode;
+  markdownContent?: string;
+}
+
+export function Modal({ isOpen, onClose, title, url, layoutId, children, markdownContent }: ModalProps) {
+  const modalRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, onClose]);
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={handleBackdropClick}
+        >
+          <motion.div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
+          
+          <motion.div
+            ref={modalRef}
+            layoutId={layoutId}
+            style={{
+              backdropFilter: "blur(40px)",
+            }}
+            className={cn(
+              "absolute inset-16 z-10 bg-black/20 rounded-lg shadow-xl border overflow-hidden max-w-[1000px] mx-auto"
+            )}
+            transition={{
+              type: "spring",
+              damping: 25,
+              stiffness: 300,
+              mass: 0.8,
+            }}
+          >
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-semibold">{title}</h2>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 text-base text-white hover:text-gray-200 transition-colors"
+                >
+                  View Project
+                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                </a>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              {markdownContent ? (
+                <div className="prose prose-invert max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {markdownContent}
+                  </ReactMarkdown>
+                </div>
+              ) : children || (
+                <div className="text-gray-500 text-center py-8">
+                  Content coming soon...
+                </div>
+              )}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
