@@ -69,7 +69,23 @@ export function getPreviousEffect(): EffectComponent {
 export function getEffectFromStorage(): EffectComponent {
   if (typeof window === "undefined") return availableEffects[0];
   
-  const currentIndex = getCurrentEffectIndex();
+  const storedIndex = localStorage.getItem("currentBackgroundEffectIndex");
+  
+  // If no stored index exists, this is the user's first visit
+  if (!storedIndex) {
+    const randomIndex = Math.floor(Math.random() * availableEffects.length);
+    localStorage.setItem("currentBackgroundEffectIndex", randomIndex.toString());
+    return availableEffects[randomIndex];
+  }
+  
+  const currentIndex = parseInt(storedIndex, 10);
+  if (isNaN(currentIndex) || currentIndex >= availableEffects.length) {
+    // Invalid stored index, generate random starting point
+    const randomIndex = Math.floor(Math.random() * availableEffects.length);
+    localStorage.setItem("currentBackgroundEffectIndex", randomIndex.toString());
+    return availableEffects[randomIndex];
+  }
+  
   const currentEffect = availableEffects[currentIndex];
   
   // Auto-advance to next effect for the next page reload
