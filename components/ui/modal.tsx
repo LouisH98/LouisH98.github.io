@@ -1,7 +1,7 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { X, ArrowRight } from "lucide-react";
+import { X, ArrowRight, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -17,6 +17,8 @@ interface ModalProps {
 
 export function Modal({ isOpen, onClose, title, url, layoutId, children, markdownContent }: ModalProps) {
   const modalRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const [showScrollIndicator, setShowScrollIndicator] = React.useState(false);
 
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -35,6 +37,27 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
       document.body.style.overflow = "unset";
     };
   }, [isOpen, onClose]);
+
+  React.useEffect(() => {
+    const checkScrollIndicator = () => {
+      if (contentRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
+        const isAtTop = scrollTop === 0;
+        const hasScrollableContent = scrollHeight > clientHeight;
+        setShowScrollIndicator(isAtTop && hasScrollableContent);
+      }
+    };
+
+    const contentElement = contentRef.current;
+    if (contentElement && isOpen) {
+      checkScrollIndicator();
+      contentElement.addEventListener('scroll', checkScrollIndicator);
+      
+      return () => {
+        contentElement.removeEventListener('scroll', checkScrollIndicator);
+      };
+    }
+  }, [isOpen, markdownContent]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -76,7 +99,7 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
             }}
           >
             <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
               <div className="flex items-center gap-4">
                 <motion.h2 
                   layoutId={layoutId ? `project-title-${title}` : undefined}
@@ -103,12 +126,33 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
               </button>
             </div>
             
-            <motion.div 
-              className="p-6 overflow-y-auto flex-1"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-            >
+            <div className="relative flex-1 min-h-0">
+              <AnimatePresence>
+                {showScrollIndicator && (
+                  <motion.div
+                    className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 bg-black/50 backdrop-blur-sm rounded-full p-2 pointer-events-none"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    <motion.div
+                      animate={{ y: [0, 4, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <ChevronDown size={20} className="text-white" />
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              <motion.div 
+                ref={contentRef}
+                className="p-6 overflow-y-auto h-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+              >
               {markdownContent ? (
                 <div className="prose prose-invert max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -122,6 +166,7 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
               )}
               </motion.div>
             </div>
+          </div>
           </motion.div>
         </motion.div>
       )}
