@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { BackgroundEffectProps } from "@/components/BackgroundEffect/types";
+import { getSpeedColor } from "@/lib/colorPalette";
 
 const Sketch = dynamic(() => import("react-p5").then((mod) => mod.default), {
   ssr: false,
@@ -12,7 +13,7 @@ interface Boid {
   acceleration: { x: number; y: number };
 }
 
-const boidColor = [7, 201, 240];
+
 const maxSpeed = 3;
 const maxForce = 0.03;
 const separationRadius = 25;
@@ -65,6 +66,8 @@ function setMagnitude(vector: { x: number; y: number }, magnitude: number) {
     vector.y = (vector.y / current) * magnitude;
   }
 }
+
+
 
 function separation(boid: Boid): { x: number; y: number } {
   const steer = { x: 0, y: 0 };
@@ -222,10 +225,14 @@ function updateBoid(boid: Boid, windowWidth: number, windowHeight: number) {
 }
 
 function drawBoids(p5: any) {
-  p5.fill(boidColor);
   p5.noStroke();
 
   for (const boid of boids) {
+    // Get color based on speed using shared utility
+    const color = getSpeedColor(boid.velocity.x, boid.velocity.y, maxSpeed);
+    
+    p5.fill(...color);
+    
     p5.push();
     p5.translate(boid.position.x, boid.position.y);
     

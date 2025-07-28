@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { BackgroundEffectProps } from "@/components/BackgroundEffect/types";
+import { getColorFromPalette } from "@/lib/colorPalette";
 
 const Sketch = dynamic(() => import("react-p5").then((mod) => mod.default), {
   ssr: false,
@@ -17,17 +18,7 @@ interface Ripple {
   maxLife: number;
 }
 
-// Color palette for magnitude gradient (low to high)
-const colorPalette = [
-  [30, 144, 255],   // Deep blue (low magnitude)
-  [0, 191, 255],    // Deep sky blue
-  [7, 201, 240],    // Light blue
-  [0, 255, 127],    // Spring green
-  [154, 205, 50],   // Yellow green
-  [255, 215, 0],    // Gold
-  [255, 140, 0],    // Dark orange
-  [255, 69, 0],     // Red orange (high magnitude)
-];
+
 
 const ripples: Ripple[] = [];
 const maxRipples = 25;
@@ -94,37 +85,7 @@ function getHeightAtPosition(x: number, y: number): number {
   return height;
 }
 
-function interpolateColor(magnitude: number): number[] {
-  // Normalize magnitude to 0-1 range - lowered threshold for earlier color transitions
-  const normalizedMag = Math.min(magnitude / 25, 1);
-  
-  // More gradual color transitions - start transitioning earlier
-  let adjustedMag;
-  if (normalizedMag < 0.4) {
-    // Stay in blue range (first 3 colors) for 40% of magnitude
-    adjustedMag = (normalizedMag / 0.4) * 0.375; // Map 0-0.4 to 0-0.375 (first 3/8 of palette)
-  } else {
-    // Gradual transition through remaining colors in last 60%
-    const remaining = (normalizedMag - 0.4) / 0.6; // 0-1 for the last 60%
-    adjustedMag = 0.375 + remaining * 0.625; // Map to remaining 5/8 of palette
-  }
-  
-  // Map to color palette index
-  const paletteIndex = adjustedMag * (colorPalette.length - 1);
-  const lowerIndex = Math.floor(paletteIndex);
-  const upperIndex = Math.min(lowerIndex + 1, colorPalette.length - 1);
-  const t = paletteIndex - lowerIndex;
-  
-  // Interpolate between two colors
-  const lowerColor = colorPalette[lowerIndex];
-  const upperColor = colorPalette[upperIndex];
-  
-  return [
-    lowerColor[0] + (upperColor[0] - lowerColor[0]) * t,
-    lowerColor[1] + (upperColor[1] - lowerColor[1]) * t,
-    lowerColor[2] + (upperColor[2] - lowerColor[2]) * t,
-  ];
-}
+
 
 function drawRippleField(p5: any) {
   const gridSize = 40;
@@ -153,7 +114,7 @@ function drawRippleField(p5: any) {
     
     // Set color based on average magnitude for this line
     const normalizedMag = Math.min(avgMagnitude / 30, 1);
-    const color = interpolateColor(normalizedMag * 50);
+    const color = getColorFromPalette(normalizedMag * 50, { maxValue: 25, blueRange: 0.4 });
     const alpha = Math.max(80, normalizedMag * 180);
     
     p5.stroke(...color, alpha);
@@ -185,7 +146,7 @@ function drawRippleField(p5: any) {
     
     // Set color based on average magnitude for this line
     const normalizedMag = Math.min(avgMagnitude / 30, 1);
-    const color = interpolateColor(normalizedMag * 50);
+    const color = getColorFromPalette(normalizedMag * 50, { maxValue: 25, blueRange: 0.4 });
     const alpha = Math.max(80, normalizedMag * 180);
     
     p5.stroke(...color, alpha);

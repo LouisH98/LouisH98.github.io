@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { BackgroundEffectProps } from "@/components/BackgroundEffect/types";
+import { getSpeedColor } from "@/lib/colorPalette";
 
 const Sketch = dynamic(() => import("react-p5").then((mod) => mod.default), {
   ssr: false,
@@ -14,7 +15,7 @@ interface Particle {
   alpha: number;
 }
 
-const particleColor = [7, 201, 240];
+
 const maxSpeed = 2;
 const noiseScale = 0.005;
 const forceMultiplier = 0.5;
@@ -107,6 +108,9 @@ function drawParticles(p5: any) {
   p5.noFill();
   
   for (const particle of particles) {
+    // Get color based on particle speed
+    const color = getSpeedColor(particle.velocity.x, particle.velocity.y, maxSpeed);
+    
     if (particle.history.length > 1) {
       // Draw flowing trail
       p5.beginShape();
@@ -115,7 +119,7 @@ function drawParticles(p5: any) {
       for (let i = 0; i < particle.history.length; i++) {
         const point = particle.history[i];
         const alpha = (i / particle.history.length) * particle.alpha * 0.6;
-        p5.stroke(...particleColor, alpha);
+        p5.stroke(...color, alpha);
         
         if (i === 0) {
           p5.vertex(point.x, point.y);
@@ -125,13 +129,13 @@ function drawParticles(p5: any) {
       }
       
       // Draw current position brighter
-      p5.stroke(...particleColor, particle.alpha);
+      p5.stroke(...color, particle.alpha);
       p5.vertex(particle.position.x, particle.position.y);
       p5.endShape();
     }
     
     // Draw current particle as a small dot
-    p5.fill(...particleColor, particle.alpha);
+    p5.fill(...color, particle.alpha);
     p5.noStroke();
     p5.circle(particle.position.x, particle.position.y, 2);
   }

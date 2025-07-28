@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { BackgroundEffectProps } from "@/components/BackgroundEffect/types";
+import { getMagnitudeColor } from "@/lib/colorPalette";
 
 const Sketch = dynamic(() => import("react-p5").then((mod) => mod.default), {
   ssr: false,
@@ -20,18 +21,8 @@ interface GridPoint {
 }
 
 
-// Color palette for magnitude gradient (low to high)
-const colorPalette = [
-  [30, 144, 255],   // Deep blue (low magnitude)
-  [0, 191, 255],    // Deep sky blue
-  [7, 201, 240],    // Light blue
-  [0, 255, 127],    // Spring green
-  [154, 205, 50],   // Yellow green
-  [255, 215, 0],    // Gold
-  [255, 140, 0],    // Dark orange
-  [255, 69, 0],     // Red orange (high magnitude)
-];
-const pointColor = [255, 255, 255, 60];
+
+const pointColor = [255, 255, 255, 100];
 const gridSpacing = 80;
 const maxVectorLength = 50;
 const noiseScale = 0.003;
@@ -108,37 +99,7 @@ function getVectorAtPosition(x: number, y: number, p5: any): Vector {
 }
 
 
-function interpolateColor(magnitude: number): number[] {
-  // Normalize magnitude to 0-1 range
-  const normalizedMag = Math.min(magnitude / maxVectorLength, 1);
-  
-  // Shift color scale - stay blue for 80%, then rapid transition in last 20%
-  let adjustedMag;
-  if (normalizedMag < 0.8) {
-    // Stay in blue range (first 3 colors) for 80% of magnitude
-    adjustedMag = (normalizedMag / 0.8) * 0.375; // Map 0-0.8 to 0-0.375 (first 3/8 of palette)
-  } else {
-    // Rapid transition through remaining colors in last 20%
-    const remaining = (normalizedMag - 0.8) / 0.2; // 0-1 for the last 20%
-    adjustedMag = 0.375 + remaining * 0.625; // Map to remaining 5/8 of palette
-  }
-  
-  // Map to color palette index
-  const paletteIndex = adjustedMag * (colorPalette.length - 1);
-  const lowerIndex = Math.floor(paletteIndex);
-  const upperIndex = Math.min(lowerIndex + 1, colorPalette.length - 1);
-  const t = paletteIndex - lowerIndex;
-  
-  // Interpolate between two colors
-  const lowerColor = colorPalette[lowerIndex];
-  const upperColor = colorPalette[upperIndex];
-  
-  return [
-    lowerColor[0] + (upperColor[0] - lowerColor[0]) * t,
-    lowerColor[1] + (upperColor[1] - lowerColor[1]) * t,
-    lowerColor[2] + (upperColor[2] - lowerColor[2]) * t,
-  ];
-}
+
 
 function drawVectorField(p5: any) {
   for (const point of grid) {
@@ -151,12 +112,12 @@ function drawVectorField(p5: any) {
     const endX = point.x + point.vector.x;
     const endY = point.y + point.vector.y;
     
-    // Get color based on magnitude
-    const color = interpolateColor(point.vector.magnitude);
-    const alpha = Math.max(point.vector.magnitude / maxVectorLength * 255, 80);
+    // Get color based on magnitude using shared utility
+    const color = getMagnitudeColor(point.vector.x, point.vector.y, maxVectorLength);
+    const alpha = Math.max(point.vector.magnitude / maxVectorLength * 255, 120);
     
     p5.stroke(...color, alpha);
-    p5.strokeWeight(3); // Thicker vectors
+    p5.strokeWeight(4); // Thicker vectors
     
     // Draw vector line
     p5.line(point.x, point.y, endX, endY);
