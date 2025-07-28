@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, EyeOff, Shield } from "lucide-react";
 import { EffectComponent } from "./types";
+import { useReducedMotion } from "@/utils/hooks/useReducedMotion";
 
 interface EffectControlsProps {
   currentEffect: EffectComponent | null;
@@ -18,6 +19,8 @@ export function EffectControls({
   isZenMode, 
   onZenModeToggle 
 }: EffectControlsProps) {
+  const prefersReducedMotion = useReducedMotion();
+  
   if (!currentEffect) return null;
 
   return (
@@ -52,6 +55,19 @@ export function EffectControls({
       >
         {isZenMode ? <EyeOff size={16} /> : <Eye size={16} />}
       </button>
+
+      {prefersReducedMotion && (
+        <>
+          <div className="w-px h-4 bg-white/20 mx-1" />
+          <div
+            className="p-1 text-blue-300"
+            title="Reduced motion mode active - respecting your system's accessibility preference"
+            aria-label="Reduced motion mode active"
+          >
+            <Shield size={16} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

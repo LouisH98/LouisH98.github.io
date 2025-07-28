@@ -1,5 +1,6 @@
 export interface BackgroundEffectProps {
   paused?: boolean;
+  prefersReducedMotion?: boolean;
 }
 
 export interface BackgroundEffectWrapperProps extends BackgroundEffectProps {

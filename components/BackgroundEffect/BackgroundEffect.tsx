@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useImperativeHandle, forwardRef, useCallback } from "react";
 import { BackgroundEffectWrapperProps, EffectComponent } from "./types";
-import { getEffectFromStorage, getNextEffect, getPreviousEffect } from "./effects";
+import { getEffectFromStorage, getNextEffect, getPreviousEffect, availableEffects } from "./effects";
+import { useReducedMotion } from "@/utils/hooks/useReducedMotion";
 
 export interface BackgroundEffectRef {
   nextEffect: () => void;
@@ -12,6 +13,7 @@ export interface BackgroundEffectRef {
 export const BackgroundEffect = forwardRef<BackgroundEffectRef, BackgroundEffectWrapperProps>(
   function BackgroundEffect({ paused = false, onEffectChange, onEffectUpdate }, ref) {
     const [currentEffect, setCurrentEffect] = useState<EffectComponent | null>(null);
+    const prefersReducedMotion = useReducedMotion();
 
     const updateEffect = useCallback((effect: EffectComponent) => {
       setCurrentEffect(effect);
@@ -32,9 +34,17 @@ export const BackgroundEffect = forwardRef<BackgroundEffectRef, BackgroundEffect
 
     useEffect(() => {
       // Only run on client side
-      const effect = getEffectFromStorage();
-      updateEffect(effect);
-    }, [updateEffect]);
+      if (prefersReducedMotion) {
+        // Force VectorField when user prefers reduced motion
+        const vectorFieldEffect = availableEffects.find(effect => effect.name === "Vector Field");
+        if (vectorFieldEffect) {
+          updateEffect(vectorFieldEffect);
+        }
+      } else {
+        const effect = getEffectFromStorage();
+        updateEffect(effect);
+      }
+    }, [updateEffect, prefersReducedMotion]);
 
     // Return null during SSR and initial hydration
     if (!currentEffect) {
@@ -42,6 +52,6 @@ export const BackgroundEffect = forwardRef<BackgroundEffectRef, BackgroundEffect
     }
 
     const EffectComponent = currentEffect.component;
-    return <EffectComponent paused={paused} />;
+    return <EffectComponent paused={paused} prefersReducedMotion={prefersReducedMotion} />;
   }
 );

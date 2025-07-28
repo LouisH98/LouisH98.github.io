@@ -139,7 +139,7 @@ function handleWindowResized(p5: any) {
   initGrid(windowWidth, windowHeight);
 }
 
-export function VectorField({ paused = false }: BackgroundEffectProps) {
+export function VectorField({ paused = false, prefersReducedMotion = false }: BackgroundEffectProps) {
   targetPauseState = paused;
 
   const setup = (p5: any, canvasParentRef: Element) => {
@@ -148,7 +148,7 @@ export function VectorField({ paused = false }: BackgroundEffectProps) {
     p5.createCanvas(windowWidth, windowHeight).parent(canvasParentRef);
 
     p5.windowResized = () => handleWindowResized(p5);
-    p5.frameRate(60);
+    p5.frameRate(120);
 
     initGrid(windowWidth, windowHeight);
   };
@@ -157,7 +157,7 @@ export function VectorField({ paused = false }: BackgroundEffectProps) {
     p5.background(0);
 
     // Lerp current speed towards target
-    const targetSpeedValue = targetPauseState ? 0.0 : 1.0;
+    const targetSpeedValue = (targetPauseState || prefersReducedMotion) ? 0.0 : 1.0;
     currentSpeed += (targetSpeedValue - currentSpeed) * lerpSpeed;
 
     // Update time for animation

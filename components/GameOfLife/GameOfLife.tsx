@@ -1,5 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
+import { BackgroundEffectProps } from "@/components/BackgroundEffect/types";
 
 // Will only import `react-p5` on client-side
 const Sketch = dynamic(() => import("react-p5").then((mod) => mod.default), {
@@ -10,7 +11,7 @@ import p5Types from "p5";
 
 const aliveCellColor = [7, 201, 240];
 
-const targetSpeed = 60;
+const targetSpeed = 120;
 let grid: boolean[][] = [];
 let targetPauseState = false;
 let currentSpeed = 1.0;
@@ -143,7 +144,7 @@ function handleWindowResized(p5: any) {
   }
 }
 
-export function GameOfLife({ paused = false }: { paused?: boolean }) {
+export function GameOfLife({ paused = false, prefersReducedMotion = false }: BackgroundEffectProps) {
   targetPauseState = paused;
   
   const setup = (p5: any, canvasParentRef: Element) => {
@@ -169,7 +170,7 @@ export function GameOfLife({ paused = false }: { paused?: boolean }) {
     p5.background(0);
     
     // Lerp current speed towards target
-    const targetSpeedValue = targetPauseState ? 0.0 : 1.0;
+    const targetSpeedValue = (targetPauseState || prefersReducedMotion) ? 0.0 : 1.0;
     currentSpeed += (targetSpeedValue - currentSpeed) * lerpSpeed;
     
     // Only iterate grid based on lerped speed
