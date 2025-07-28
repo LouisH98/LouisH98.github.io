@@ -83,9 +83,11 @@ function ProjectCard({
           style={{
             ...style,
             backdropFilter: "blur(40px)",
+            width: "clamp(18rem, 20vw, 80rem)",
+            height: "clamp(20rem, 22vw, 90rem)",
           }}
           className={cn(
-            "m-2 cursor-pointer w-80 h-96 will-change-transform flex flex-col",
+            "m-2 cursor-pointer will-change-transform flex flex-col",
             !animationComplete && styles["slide-in-blurred-left"],
             "motion-safe:hover:scale-105 transition-transform transform-gpu"
           )}

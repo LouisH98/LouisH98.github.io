@@ -1,7 +1,7 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { X, ArrowRight, ChevronDown } from "lucide-react";
+import { X, ExternalLink, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -89,7 +89,7 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
               backdropFilter: "blur(40px)",
             }}
             className={cn(
-              "absolute inset-16 z-10 bg-black/20 rounded-lg shadow-xl border overflow-hidden max-w-[1000px] mx-auto"
+              "absolute inset-4 sm:inset-8 md:inset-16 z-10 bg-black/20 rounded-lg shadow-xl border overflow-hidden max-w-[1000px] mx-auto"
             )}
             transition={{
               type: "spring",
@@ -99,32 +99,33 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
             }}
           >
             <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b flex-shrink-0">
                 <motion.h2 
                   layoutId={layoutId ? `project-title-${title}` : undefined}
-                  className="text-xl font-semibold"
+                  className="text-lg sm:text-xl font-semibold"
                 >
                   {title}
                 </motion.h2>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-center gap-2 text-base text-white hover:text-gray-200 transition-colors"
-                >
-                  View Project
-                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center gap-1 sm:gap-2 text-sm sm:text-base text-white hover:text-gray-200 transition-colors"
+                  >
+                    <span className="hidden sm:inline">View Project</span>
+                    <span className="sm:hidden">View</span>
+                    <ExternalLink size={14} className="transition-transform group-hover:scale-110" />
+                  </a>
+                  <button
+                    onClick={onClose}
+                    className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                    aria-label="Close modal"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                aria-label="Close modal"
-              >
-                <X size={20} />
-              </button>
-            </div>
             
             <div className="relative flex-1 min-h-0">
               <AnimatePresence>
@@ -148,7 +149,7 @@ export function Modal({ isOpen, onClose, title, url, layoutId, children, markdow
               
               <motion.div 
                 ref={contentRef}
-                className="p-6 overflow-y-auto h-full"
+                className="p-4 sm:p-6 overflow-y-auto h-full"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.4 }}

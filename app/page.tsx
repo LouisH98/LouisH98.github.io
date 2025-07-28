@@ -39,13 +39,13 @@ export default function Home() {
 
   return (
     <main 
-      className={cn("h-screen", "select-none")}
+      className={cn("min-h-screen", "select-none")}
       onClick={handleClick}
     >
       <div
         suppressHydrationWarning
         className={cn(
-          "absolute pointer-events-none transition-all duration-500 ease-in-out",
+          "fixed inset-0 pointer-events-none transition-all duration-500 ease-in-out",
           currentEffect === "Boids" ? (isZenMode ? "blur-none" : "blur-sm") : 
           currentEffect === "Flow Field" ? (isZenMode ? "blur-none" : "blur-sm") :
           currentEffect === "Vector Field" ? (isZenMode ? "blur-none" : "blur-sm") :
