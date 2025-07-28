@@ -111,7 +111,12 @@ function ProjectCard({
   );
 }
 
-export function Projects({ onModalStateChange, ...props }: { onModalStateChange?: (isOpen: boolean) => void } & React.HTMLAttributes<HTMLDivElement>) {
+export function Projects({ 
+  onModalStateChange, 
+  ...props 
+}: { 
+  onModalStateChange?: (isOpen: boolean) => void;
+} & React.HTMLAttributes<HTMLDivElement>) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [modalBounds, setModalBounds] = useState<DOMRect | undefined>(undefined);
   const [markdownContent, setMarkdownContent] = useState<string>("");

@@ -1,15 +1,23 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { EffectComponent } from "./types";
 
 interface EffectControlsProps {
   currentEffect: EffectComponent | null;
   onNext: () => void;
   onPrevious: () => void;
+  isZenMode: boolean;
+  onZenModeToggle: () => void;
 }
 
-export function EffectControls({ currentEffect, onNext, onPrevious }: EffectControlsProps) {
+export function EffectControls({ 
+  currentEffect, 
+  onNext, 
+  onPrevious, 
+  isZenMode, 
+  onZenModeToggle 
+}: EffectControlsProps) {
   if (!currentEffect) return null;
 
   return (
@@ -32,6 +40,17 @@ export function EffectControls({ currentEffect, onNext, onPrevious }: EffectCont
         aria-label="Next effect"
       >
         <ChevronRight size={16} />
+      </button>
+
+      <div className="w-px h-4 bg-white/20 mx-1" />
+      
+      <button
+        onClick={onZenModeToggle}
+        className="p-1 hover:bg-white/10 rounded transition-colors"
+        aria-label={isZenMode ? "Exit zen mode" : "Enter zen mode"}
+        title={isZenMode ? "Exit zen mode" : "Enter zen mode"}
+      >
+        {isZenMode ? <EyeOff size={16} /> : <Eye size={16} />}
       </button>
     </div>
   );

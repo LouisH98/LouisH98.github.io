@@ -16,11 +16,14 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEffect, setCurrentEffect] = useState<string>("GameOfLife");
   const [currentEffectComponent, setCurrentEffectComponent] = useState<EffectComponent | null>(null);
+  const [isZenMode, setIsZenMode] = useState(false);
   const backgroundEffectRef = useRef<BackgroundEffectRef>(null);
 
   const handleClick = useCallback(() => {
-    setShowProjects(true);
-  }, [setShowProjects]);
+    if (!isZenMode) {
+      setShowProjects(true);
+    }
+  }, [setShowProjects, isZenMode]);
 
   const handleNextEffect = useCallback(() => {
     backgroundEffectRef.current?.nextEffect();
@@ -28,6 +31,10 @@ export default function Home() {
 
   const handlePreviousEffect = useCallback(() => {
     backgroundEffectRef.current?.previousEffect();
+  }, []);
+
+  const handleZenModeToggle = useCallback(() => {
+    setIsZenMode(prev => !prev);
   }, []);
 
   return (
@@ -38,11 +45,12 @@ export default function Home() {
       <div
         suppressHydrationWarning
         className={cn(
-          "absolute pointer-events-none",
-          currentEffect === "Boids" ? "blur-sm" : 
-          currentEffect === "Flow Field" ? "blur-sm" :
-          currentEffect === "Vector Field" ? "blur-sm" :
-          currentEffect === "Ripple Field" ? "blur-sm" : "blur-lg"
+          "absolute pointer-events-none transition-all duration-500 ease-in-out",
+          currentEffect === "Boids" ? (isZenMode ? "blur-none" : "blur-sm") : 
+          currentEffect === "Flow Field" ? (isZenMode ? "blur-none" : "blur-sm") :
+          currentEffect === "Vector Field" ? (isZenMode ? "blur-none" : "blur-sm") :
+          currentEffect === "Ripple Field" ? (isZenMode ? "blur-none" : "blur-sm") : 
+          (isZenMode ? "blur-sm" : "blur-lg")
         )}
         style={{ zIndex: -1 }}
       >
@@ -53,24 +61,41 @@ export default function Home() {
           onEffectUpdate={setCurrentEffectComponent}
         />
       </div>
-      <Greeting
-        onGreetingFinished={useCallback(
-          () => setShowProjects(true),
-          [setShowProjects]
+      
+      <div 
+        className={cn(
+          "transition-opacity duration-500 ease-in-out",
+          isZenMode ? "opacity-0 pointer-events-none" : "opacity-100"
         )}
-      />
-
-      {showProjects && (
-        <Projects
-          className={cn("w-screen", "flex", "flex-col", "justify-around")}
-          onModalStateChange={setIsModalOpen}
+      >
+        <Greeting
+          onGreetingFinished={useCallback(
+            () => setShowProjects(true),
+            [setShowProjects]
+          )}
         />
-      )}
+      </div>
+
+      <div 
+        className={cn(
+          "transition-opacity duration-500 ease-in-out",
+          !isZenMode && showProjects ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+      >
+        {showProjects && (
+          <Projects
+            className={cn("w-screen", "flex", "flex-col", "justify-around")}
+            onModalStateChange={setIsModalOpen}
+          />
+        )}
+      </div>
 
       <EffectControls
         currentEffect={currentEffectComponent}
         onNext={handleNextEffect}
         onPrevious={handlePreviousEffect}
+        isZenMode={isZenMode}
+        onZenModeToggle={handleZenModeToggle}
       />
     </main>
   );
