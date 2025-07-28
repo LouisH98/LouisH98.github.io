@@ -188,7 +188,6 @@ export function RippleField({ paused = false }: BackgroundEffectProps) {
     p5.mousePressed = () => {
       if (p5.mouseX >= 0 && p5.mouseX <= p5.width && p5.mouseY >= 0 && p5.mouseY <= p5.height) {
         ripples.push(createRipple(p5.mouseX, p5.mouseY));
-        return false; // Prevent default behavior
       }
     };
     
