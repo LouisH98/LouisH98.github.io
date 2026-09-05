@@ -80,7 +80,7 @@ export function createWindowAtmosphere(renderer: THREE.WebGLRenderer) {
         #include <dithering_fragment>
       }`,
   });
-  const scene=new THREE.Scene(),camera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+  const scene=new THREE.Scene();scene.name="atmosphere";const camera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
   const geometry=new THREE.PlaneGeometry(2,2);scene.add(new THREE.Mesh(geometry,material));
   const size=new THREE.Vector2();
   return {

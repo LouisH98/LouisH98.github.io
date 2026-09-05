@@ -31,7 +31,7 @@ export default function Console() {
   const [audioReady, setAudioReady] = useState(false), [optionsOpen, setOptionsOpen] = useState(false);
   const soundWanted = useRef(true), audioUnlocked = useRef(false), audioUnlocking = useRef(false);
   const root = useRef<HTMLElement>(null), audio = useRef<ConsoleAudio | null>(null);
-  const currentFrame = useRef({ boot, elapsed }); currentFrame.current = { boot, elapsed };
+  const currentFrame = useRef({ boot, elapsed }); currentFrame.current.boot = boot;
   const currentRoute = useRef(route); currentRoute.current = route;
   const focusByView = useRef<Record<string, string>>({}), reducedOverride = useRef(false);
   motionState.current = reduced;
@@ -69,11 +69,12 @@ export default function Console() {
 
   useEffect(() => {
     if (!ready || !boot) return;
-    let previous = performance.now(), time = currentFrame.current.elapsed;
+    let previous = performance.now(), time = currentFrame.current.elapsed, lastUi = -Infinity;
     let id = 0;
     const tick = (now: number) => { if (!document.hidden) time += (now - previous) / 1000; previous = now;
       currentFrame.current = { boot: true, elapsed: time };
-      setElapsed(time);
+      // WebGL/audio read the live clock; React only updates discrete UI state.
+      if(now-lastUi>=100 || time>=BOOT_DURATION){setElapsed(time);lastUi=now;}
       if (time >= BOOT_DURATION) finish();
       else id = requestAnimationFrame(tick);
     };
@@ -173,7 +174,7 @@ export default function Console() {
   return <CrtEntrance fallback={failed} powerButton={powerButton} powered={powered} ready={ready} powerTime={warming ? elapsed : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powerOn}><main ref={root} data-powered={powered} data-room={!powered || (boot && crtZoom(elapsed)<1)} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
     <h1 className="sr-only">Louis’s portfolio</h1>
     <div className="screen-haze" aria-hidden="true" />
-    {ready && !failed && <Scene powered={powered} powerButton={powerButton} settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
+    {ready && !failed && <Scene clock={currentFrame} powered={powered} powerButton={powerButton} settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
     <div className="transition-black" style={{ opacity: !reduced && !boot && changing ? 1 : 0 }} aria-hidden="true" />
     <header className="console-top"><button id="sound-control" data-sound-toggle className="sound-button" onClick={toggleSound} aria-pressed={sound} aria-busy={soundLoading} aria-label={sound ? 'Mute sound' : 'Enable sound'} title={sound ? 'Mute sound' : 'Enable sound'}>{sound ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}</button></header>
     {audioError && <output className="audio-status">{audioError}</output>}

@@ -5,7 +5,7 @@ import { crtPowerFrame } from '@/lib/console/crt';
 /** One post-process pass over the complete boot picture, including its title. */
 export function createCrtShader(renderer: THREE.WebGLRenderer) {
   const target = createLinearTarget(renderer);
-  const scene = new THREE.Scene();
+  const scene = new THREE.Scene();scene.name="CRT";
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const material = new THREE.ShaderMaterial({
     depthTest: false, depthWrite: false,
@@ -49,7 +49,7 @@ export function createCrtShader(renderer: THREE.WebGLRenderer) {
           color = (color * (1.0 + concentration * 1.5)
             + vec3(0.45, 0.65, 0.85) * concentration * beam) * ignition.z;
         }
-        gl_FragColor = vec4(max(color, vec3(0.0)) * inside, 1.0);
+        gl_FragColor = vec4(max(color, vec3(0.0)) * inside, warming ? 1.0 : texture2D(picture, uv).a * inside);
         #include <colorspace_fragment>
       }`,
   });

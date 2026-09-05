@@ -25,7 +25,7 @@ export function createSourceBloom(renderer:THREE.WebGLRenderer) {
         gl_FragColor=vec4(color/total,1.0);
       }`});
   const geometry=new THREE.PlaneGeometry(2,2),quad=new THREE.Mesh(geometry,extract);
-  const scene=new THREE.Scene(),camera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);scene.add(quad);
+  const scene=new THREE.Scene();scene.name="bloom";const camera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);scene.add(quad);
   return {
     texture:a.texture,
     render(picture:THREE.Texture,depth:THREE.DepthTexture,view:THREE.PerspectiveCamera,source:THREE.Vector3,width:number,height:number){

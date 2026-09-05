@@ -12,8 +12,8 @@ import { asset } from '@/lib/console/assets';
 import { bedroomCameraFrame } from '@/lib/console/bedroomCamera';
 
 /** A real, lit room and monitor; the running console is its emissive screen texture. */
-export function createBedroomScene(renderer: THREE.WebGLRenderer,invalidate:()=>void=()=>{}) {
-  const room = new THREE.Scene();
+export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.Texture,invalidate:()=>void=()=>{}) {
+  const room = new THREE.Scene();room.name="bedroom";
   let disposed=false;
   let editor:ReturnType<typeof import('./layoutEditor').createLayoutEditor>|undefined;
   const layoutItems:LayoutItem[]=[];
@@ -186,7 +186,7 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,invalidate:()=>
   const restingScreen=positions.array.slice();
   let screenFitKey='';
   screenGeometry.computeVertexNormals();
-  const screenMaterial = new THREE.MeshPhysicalMaterial({color:'#080e13',roughness:.13,metalness:0,clearcoat:1,clearcoatRoughness:.055,envMapIntensity:.65,emissive:'#ffffff',emissiveIntensity:0});
+  const screenMaterial = new THREE.MeshPhysicalMaterial({color:'#080e13',roughness:.13,metalness:0,clearcoat:1,clearcoatRoughness:.055,envMapIntensity:.65,emissive:'#ffffff',emissiveIntensity:0,emissiveMap:picture});
   configureGlassReflection(screenMaterial);
   materials.push(screenMaterial);
   const screen=new THREE.Mesh(screenGeometry,screenMaterial);screen.position.set(0,.11,.675);room.add(screen);
@@ -389,11 +389,9 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,invalidate:()=>
       positions.needsUpdate=true;screenGeometry.computeVertexNormals();
       screenGeometry.computeBoundingSphere();
       }
-      screenMaterial.emissiveMap=powered?picture:null;
+      screenMaterial.emissiveMap=picture;
       screenMaterial.emissiveIntensity=powered?getLighting().screen:0;
       screenMaterial.color.set(powered?'#000000':'#080e13');
-      // The material program needs recompilation only when the map is introduced.
-      if(Boolean(screenMaterial.userData.powered)!==powered){screenMaterial.needsUpdate=true;screenMaterial.userData.powered=powered;}
       ledMaterial.color.set(powered?'#9ee863':'#ff3b24');standby.color.copy(ledMaterial.color);
       const powerFrame=ignition===null?null:crtPowerFrame(ignition);
       screenLight.intensity=powered?1.3*(powerFrame?powerFrame.width*powerFrame.height*powerFrame.opacity:1):0;
