@@ -82,7 +82,7 @@ test('CRT zoom preserves the opening and fills the viewport before boot ends', a
   }
 });
 
-test('CRT ignition opens a horizontal beam before expanding and settling to black', async () => {
+test('CRT ignition opens a horizontal beam before expanding into a continuously visible full raster', async () => {
   const { crtPowerFrame, CRT_POWER_DURATION } = await import('../lib/console/crt.ts');
   assert.equal(crtPowerFrame(0).opacity, 0);
   const line = crtPowerFrame(.42);
@@ -91,7 +91,8 @@ test('CRT ignition opens a horizontal beam before expanding and settling to blac
   assert.equal(line.opacity, 1);
   const opening = crtPowerFrame(.65);
   assert.ok(opening.height > line.height && opening.height < 1);
-  assert.equal(crtPowerFrame(CRT_POWER_DURATION).opacity, 0);
+  assert.equal(crtPowerFrame(CRT_POWER_DURATION).opacity, 1);
+  for (let t = .08; t <= CRT_POWER_DURATION; t += .01) assert.equal(crtPowerFrame(t).opacity, 1);
   assert.equal(crtPowerFrame(CRT_POWER_DURATION).height, 1);
 });
 

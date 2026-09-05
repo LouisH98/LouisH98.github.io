@@ -27,11 +27,8 @@ export default function CrtEntrance({ fallback, powerButton, children, powered, 
   return <div ref={stage} className="crt-stage" data-power={powered ? 'on' : 'off'} data-fullscreen={full} data-warming={ignition !== null}>
     <div className="crt-set" style={style}>
       <div className="crt-aperture">
-        <div className="crt-live" inert={!powered || ignition !== null} aria-hidden={!powered || ignition !== null}>{children}</div>
+        <div className="crt-live" style={ignition ? { transform: `scale(${ignition.width}, ${ignition.height})`, opacity: ignition.opacity } : undefined} inert={!powered || ignition !== null} aria-hidden={!powered || ignition !== null}>{children}</div>
         {!powered && <div className="crt-dark-glass" aria-hidden="true" />}
-        {ignition && <div className="crt-ignition" aria-hidden="true">
-          <div className="crt-phosphor" style={{ transform: `scale(${ignition.width}, ${ignition.height})`, opacity: ignition.opacity }} />
-        </div>}
         <div className="crt-glass" aria-hidden="true" />
       </div>
       <img className="crt-casing" src={asset('textures/crt-casing.png')} alt="" aria-hidden="true" draggable={false} />

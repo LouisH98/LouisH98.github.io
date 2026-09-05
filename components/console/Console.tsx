@@ -71,10 +71,9 @@ export default function Console() {
     if (!ready || !boot) return;
     let previous = performance.now(), time = currentFrame.current.elapsed;
     let id = 0;
-    const tick = (now: number) => { const wasWarming = time < 0; if (!document.hidden) time += (now - previous) / 1000; previous = now;
+    const tick = (now: number) => { if (!document.hidden) time += (now - previous) / 1000; previous = now;
       currentFrame.current = { boot: true, elapsed: time };
       setElapsed(time);
-      if (wasWarming && time >= 0) audio.current?.sync(true);
       if (time >= BOOT_DURATION) finish();
       else id = requestAnimationFrame(tick);
     };
@@ -133,7 +132,7 @@ export default function Console() {
     if (!ready || powerState.current) return;
     powerState.current = true;
     const intro = parseHash(location.hash).view === 'menu' && !reduced && !failed;
-    const start = intro ? -CRT_POWER_DURATION : 0;
+    const start = 0;
     setElapsed(start); currentFrame.current = { boot: intro, elapsed: start };
     setBoot(intro); setPowered(true);
     if (soundWanted.current) {
@@ -145,7 +144,7 @@ export default function Console() {
       });
     }
   }
-  const warming = boot && elapsed < 0;
+  const warming = boot && elapsed < CRT_POWER_DURATION;
   useEffect(() => {
     if (powered && boot && !warming) root.current?.querySelector<HTMLButtonElement>('.boot-bottom button')?.focus({ preventScroll: true });
   }, [powered, boot, warming]);
@@ -163,7 +162,7 @@ export default function Console() {
     if (reduced || failed) return;
     if (transition.current) clearTimeout(transition.current); setChanging(false);
     remember(); history.replaceState(null, '', `${location.pathname}${location.search}#/`); setRoute({ view: 'menu' });
-    setElapsed(-CRT_POWER_DURATION); currentFrame.current = { boot: true, elapsed: -CRT_POWER_DURATION }; setBoot(true); audio.current?.sync(true);
+    setElapsed(0); currentFrame.current = { boot: true, elapsed: 0 }; setBoot(true); audio.current?.sync(true);
   }
   function selection(index: number, kind: 'menu' | 'save') {
     if (kind === 'menu') { if (selected !== index) audio.current?.cue(route.view === 'settings' ? 'setting' : 'move'); setSelected(index); }
@@ -171,7 +170,7 @@ export default function Console() {
   }
   const project = projects.find(p => p.id === route.projectId) || projects[0];
   const title = route.view === 'browser' ? 'Browser' : route.view === 'about' ? 'About Me' : route.view === 'settings' ? 'System Configuration' : 'Memory Card (PS2) / 1';
-  return <CrtEntrance fallback={failed} powerButton={powerButton} powered={powered} ready={ready} powerTime={warming ? elapsed + CRT_POWER_DURATION : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powerOn}><main ref={root} data-powered={powered} data-room={!powered || (boot && crtZoom(elapsed)<1)} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
+  return <CrtEntrance fallback={failed} powerButton={powerButton} powered={powered} ready={ready} powerTime={warming ? elapsed : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powerOn}><main ref={root} data-powered={powered} data-room={!powered || (boot && crtZoom(elapsed)<1)} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
     <h1 className="sr-only">Louis’s portfolio</h1>
     <div className="screen-haze" aria-hidden="true" />
     {ready && !failed && <Scene powered={powered} powerButton={powerButton} settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}

@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { crtPowerFrame } from '@/lib/console/crt';
 import { LAYOUT_DEFAULTS } from '@/lib/console/layout';
 import type { LayoutItem } from './layoutEditor';
 import { configureGlassReflection } from './glassReflection';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { createWindowAtmosphere } from './windowAtmosphere';
 import { getLighting, getReflectionRevision, LIGHTING_DEFAULTS, refreshLightingReflection } from '@/lib/console/lighting';
@@ -78,7 +80,7 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,invalidate:()=>
   });
   posterTexture.colorSpace=THREE.SRGBColorSpace;
   posterTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-  const posterMaterial=new THREE.MeshStandardMaterial({map:posterTexture,roughness:.94});materials.push(posterMaterial);
+  const posterMaterial=new THREE.MeshStandardMaterial({map:posterTexture,color:0x999999,roughness:1,metalness:0,envMapIntensity:0});materials.push(posterMaterial);
   box(1.88,2.78,.055,4.05,1.8,-5.86,charcoal,.012);
   const poster=new THREE.Mesh(new THREE.PlaneGeometry(1.8,2.7),posterMaterial);
   poster.position.set(4.05,1.8,-5.828);poster.receiveShadow=true;room.add(poster);
@@ -181,6 +183,8 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,invalidate:()=>
     const limit=1.5-.15+Math.sqrt(Math.max(0,.15*.15-Math.pow(Math.max(0,Math.abs(y)-(1.125-.15)),2)));
     positions.setXYZ(i,THREE.MathUtils.clamp(x,-limit,limit),y,.12*(1-nx*nx)*(1-ny*ny));
   }
+  const restingScreen=positions.array.slice();
+  let screenFitKey='';
   screenGeometry.computeVertexNormals();
   const screenMaterial = new THREE.MeshPhysicalMaterial({color:'#080e13',roughness:.13,metalness:0,clearcoat:1,clearcoatRoughness:.055,envMapIntensity:.65,emissive:'#ffffff',emissiveIntensity:0});
   configureGlassReflection(screenMaterial);
@@ -218,7 +222,11 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,invalidate:()=>
   const fill=new THREE.DirectionalLight('#c5d5e9',.42);fill.position.set(-2,4,5);room.add(fill);
   const warmBounce=new THREE.PointLight(lampBounceColor,.8,5,2);warmBounce.position.set(4.3,-.4,-4.5);room.add(warmBounce);
   layoutItems.find(item=>item.name==='Bedside table and lamp')?.objects.push(warmBounce);
-  const screenLight=new THREE.PointLight('#709eff',0,6,2);screenLight.position.set(0,.1,1.1);room.add(screenLight);
+  // Screen spill emits toward the desk/viewer, never back into its own glass.
+  // A point source here produces a persistent specular dot at the screen centre.
+  RectAreaLightUniformsLib.init();
+  const screenLight=new THREE.RectAreaLight('#709eff',0,2.9,2.15);
+  screenLight.position.set(0,.1,1.1);screenLight.rotation.y=Math.PI;room.add(screenLight);
   beginItem();
   // A shaded task lamp directs a warm pool at the console, rather than lighting the whole room.
   const deskLampMat=mat('#34433f',.34,.55);
@@ -364,13 +372,31 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,invalidate:()=>
       const frame=bedroomCameraFrame(width,height,progress);
       camera.position.set(frame.x,frame.y,frame.z);
       camera.lookAt(target);camera.updateProjectionMatrix();camera.updateMatrixWorld();
+      // The same glass/raster grows to match the viewport. No second image or
+      // black-backed crossfade can dim or duplicate the particles during zoom.
+      const takeover=frame.handoff;
+      const halfHeight=(camera.position.z-screen.position.z)*Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
+      const fitKey=takeover===0?'rest':`${takeover}:${halfHeight}:${camera.aspect}`;
+      if(fitKey!==screenFitKey){
+      screenFitKey=fitKey;
+      const uvs=screenGeometry.attributes.uv;
+      for(let i=0;i<positions.count;i++){
+        positions.setXYZ(i,
+          THREE.MathUtils.lerp(restingScreen[i*3],(uvs.getX(i)*2-1)*halfHeight*camera.aspect,takeover),
+          THREE.MathUtils.lerp(restingScreen[i*3+1],(uvs.getY(i)*2-1)*halfHeight,takeover),
+          restingScreen[i*3+2]*(1-takeover));
+      }
+      positions.needsUpdate=true;screenGeometry.computeVertexNormals();
+      screenGeometry.computeBoundingSphere();
+      }
       screenMaterial.emissiveMap=powered?picture:null;
       screenMaterial.emissiveIntensity=powered?getLighting().screen:0;
       screenMaterial.color.set(powered?'#000000':'#080e13');
       // The material program needs recompilation only when the map is introduced.
       if(Boolean(screenMaterial.userData.powered)!==powered){screenMaterial.needsUpdate=true;screenMaterial.userData.powered=powered;}
       ledMaterial.color.set(powered?'#9ee863':'#ff3b24');standby.color.copy(ledMaterial.color);
-      screenLight.intensity=powered?(ignition!==null?2:1.3):0;
+      const powerFrame=ignition===null?null:crtPowerFrame(ignition);
+      screenLight.intensity=powered?1.3*(powerFrame?powerFrame.width*powerFrame.height*powerFrame.opacity:1):0;
       renderer.setRenderTarget(null);renderer.setClearColor('#090d15',1);atmosphere.render(renderer,room,camera,taskLight);
       anchor.copy(powerPosition).project(camera);edge.copy(powerPosition).add(new THREE.Vector3(.11,0,0)).project(camera);
       return { x:(anchor.x+1)*width/2,y:(1-anchor.y)*height/2,size:Math.max(44,Math.abs(edge.x-anchor.x)*width) };

@@ -20,7 +20,10 @@ export function createCrtShader(renderer: THREE.WebGLRenderer) {
       uniform bool warming;
       varying vec2 screenUV;
       void main() {
-        vec2 point = screenUV * 2.0 - 1.0;
+        vec2 screenPoint = screenUV * 2.0 - 1.0;
+        // Compress the complete live picture into the growing electron raster.
+        vec2 aperture = warming ? max(ignition.xy, vec2(0.001)) : vec2(1.0);
+        vec2 point = screenPoint / aperture;
         // Barrel mapping bends the raster, not just the outline of the screen.
         vec2 curved = point * (1.0 + amount * 0.075 * dot(point, point));
         vec2 uv = curved * 0.5 + 0.5;
@@ -39,9 +42,12 @@ export function createCrtShader(renderer: THREE.WebGLRenderer) {
         float grain = fract(sin(dot(gl_FragCoord.xy + floor(time * 12.0), vec2(12.9898, 78.233))) * 43758.5453);
         color = color * edge * scanline * mix(vec3(1.0), phosphor, amount) * (1.0 + 0.13 * amount) + (grain - 0.5) * 0.006 * amount * smoothstep(0.0, 0.04, max(color.r, max(color.g, color.b)));
         if (warming) {
-          vec2 beam = abs(point) / max(ignition.xy, vec2(0.001));
-          float glow = exp(-max(pow(beam.x, 6.0), pow(beam.y, 2.0)) * 1.6);
-          color = vec3(0.68, 0.86, 1.0) * glow * ignition.z;
+          // Concentrated phosphor energy belongs to the same aperture: no
+          // independent centre dot or full-screen flash survives the expansion.
+          float concentration = 1.0 - smoothstep(0.004, 0.24, ignition.y);
+          float beam = exp(-pow(abs(point.y), 2.0) * 2.5);
+          color = (color * (1.0 + concentration * 1.5)
+            + vec3(0.45, 0.65, 0.85) * concentration * beam) * ignition.z;
         }
         gl_FragColor = vec4(max(color, vec3(0.0)) * inside, 1.0);
         #include <colorspace_fragment>

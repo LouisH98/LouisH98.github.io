@@ -1,12 +1,12 @@
 import { smooth } from './timeline';
 
 export const CRT_POWER_DURATION = 1.15;
-/** A single phosphor ignition, then a quiet black handoff to the intro. */
+/** Open the live raster from a dot to a line, then settle at full size. */
 export function crtPowerFrame(seconds: number) {
   return {
     width: .006 + .994 * smooth((seconds - .12) / .3),
     height: .004 + .996 * smooth((seconds - .43) / .4),
-    opacity: smooth(seconds / .08) * (1 - smooth((seconds - .5) / .5)),
+    opacity: smooth(seconds / .08),
   };
 }
 

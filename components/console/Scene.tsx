@@ -28,11 +28,6 @@ export default function Scene(props: Props) {
     let roomDirty=true;
     const bedroom=createBedroomScene(renderer,()=>{roomDirty=true;});
     const televisionPicture=createLinearTarget(renderer);
-    const handoffScene=new THREE.Scene();
-    const handoffMaterial=new THREE.MeshBasicMaterial({map:televisionPicture.texture,transparent:true,depthTest:false,depthWrite:false});
-    const handoffGeometry=new THREE.PlaneGeometry(2,2);
-    const handoff=new THREE.Mesh(handoffGeometry,handoffMaterial);handoffScene.add(handoff);
-    const handoffCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
     const world = new THREE.Scene(), overlay = new THREE.Scene();
     world.fog = new THREE.FogExp2(0x111119, .019);
     const camera = new THREE.PerspectiveCamera(48, 1, .1, 160);
@@ -162,7 +157,7 @@ export default function Scene(props: Props) {
         outputWidth=nextWidth;outputHeight=nextHeight;
       }
       const roomProgress=p.powered && p.boot ? crtZoom(p.elapsed) : 0;
-      const powerTime=p.boot && p.elapsed<0 ? p.elapsed+CRT_POWER_DURATION : null;
+      const powerTime=p.boot && p.elapsed<CRT_POWER_DURATION ? p.elapsed : null;
       const sourceAspect=roomActive?THREE.MathUtils.lerp(4/3,width/height,smooth((roomProgress-.65)/.35)):width/height;
       camera.aspect=sourceAspect;camera.updateProjectionMatrix();
       screenCamera.left=-sourceAspect;screenCamera.right=sourceAspect;screenCamera.updateProjectionMatrix();
@@ -171,7 +166,8 @@ export default function Scene(props: Props) {
       if(p.reduced||(p.boot&&!wasBoot))histories.forEach(h=>{h.length=0;});
       wasBoot=p.boot;
       if(!p.reduced)time+=dt;
-      const phase=bootFrame(p.elapsed), morph=p.boot?phase.morph:1;
+      const pictureTime=Math.max(0,p.elapsed);
+      const phase=bootFrame(pictureTime), morph=p.boot?phase.morph:1;
       const curvature = roomActive && p.boot && !p.reduced ? 1 - crtZoom(p.elapsed) : 0;
       title.visible = p.boot; titleMaterial.opacity = phase.title;
       renderer.setRenderTarget(roomActive || curvature > 0 ? crt.target : null);
@@ -202,7 +198,10 @@ export default function Scene(props: Props) {
       const cycle=time%22;
       const gather=menuPlay*(cycle<5?0:cycle<10?smooth((cycle-5)/5):cycle<13?1:cycle<18?1-smooth((cycle-13)/5):0);
       for(let i=0;i<8;i++){
-        const phaseAngle=i/8*Math.PI*2;
+        // Each adjacent pair starts as one coloured light, then separates.
+        const parent=Math.floor(i/2);
+        const split=smooth(morph/.65);
+        const phaseAngle=(parent*2+.5+(i%2-.5)*split)/8*Math.PI*2;
         const theta=phaseAngle+time*.55+menuChaseAngle
           +(3.5-i)*(Math.PI/4-.23)*gather
           +Math.sin(time*.61+i*.9)*.17*(1-menuPlay);
@@ -212,11 +211,11 @@ export default function Scene(props: Props) {
         const roll=Math.sin(time*.23)*.5+time*.06;
         const x=Math.cos(theta)*r, y=Math.sin(theta)*r*Math.cos(tilt), depth=Math.sin(theta)*Math.sin(tilt);
         const ring=new THREE.Vector2(center.x+x*Math.cos(roll)-y*Math.sin(roll),center.y+x*Math.sin(roll)+y*Math.cos(roll));
-        const start=orbit(i%4,p.elapsed);
+        const start=orbit(parent,pictureTime);
         const sprite=sprites[i]; sprite.position.set(THREE.MathUtils.lerp(start.x,ring.x,morph),THREE.MathUtils.lerp(start.y,ring.y,morph),0);
-        sprite.material.color.setHex(colors[i%4]).lerp(blue,morph);
-        sprite.material.opacity=(i<4?1:smooth(morph*1.6))*(1+depth*.18*morph);
-        const size=THREE.MathUtils.lerp(.058,radius*(.46+depth*.09),morph);
+        sprite.material.color.setHex(colors[parent]).lerp(blue,smooth((morph-.35)/.65));
+        sprite.material.opacity=(.5+.5*split)*(1+depth*.18*morph);
+        const size=THREE.MathUtils.lerp(.058,radius*(.46+depth*.09),smooth((morph-.2)/.8));
         sprite.scale.setScalar(size);
         const core=cores[i];core.position.copy(sprite.position);core.scale.setScalar(size*.32);
         core.material.opacity=sprite.material.opacity*(.3+morph*.6);
@@ -245,14 +244,13 @@ export default function Scene(props: Props) {
         const anchor=bedroom.render(televisionPicture.texture,width,height,roomProgress,Boolean(p.powered),powerTime,p.reduced?0:now/1000);
         const button=p.powerButton?.current;
         if(button){button.style.left=`${anchor.x}px`;button.style.top=`${anchor.y}px`;button.style.width=`${anchor.size}px`;button.style.height=`${anchor.size}px`;}
-        if(roomProgress>.82){handoffMaterial.opacity=smooth((roomProgress-.82)/.18);renderer.clearDepth();renderer.render(handoffScene,handoffCamera);}
         roomDirty=false;
       } else if (curvature > 0) crt.render(renderer, curvature, time);
     };
     frame=requestAnimationFrame(animate);
     const lost=(event:Event)=>{event.preventDefault();state.current.onFailure();}; renderer.domElement.addEventListener('webglcontextlost',lost);
     return()=>{
-      disposed = true; unsubscribeLighting();bedroom.dispose();televisionPicture.dispose();handoffGeometry.dispose();handoffMaterial.dispose();crt.dispose(); titleTexture.dispose(); titleMaterial.dispose(); titleGeometry.dispose();
+      disposed = true; unsubscribeLighting();bedroom.dispose();televisionPicture.dispose();crt.dispose(); titleTexture.dispose(); titleMaterial.dispose(); titleGeometry.dispose();
       cancelAnimationFrame(frame);observer.disconnect();renderer.domElement.removeEventListener('webglcontextlost',lost);
       sculpture.dispose();fadePlane.geometry.dispose();fadePlane.material.dispose();
       box.dispose();materials.forEach(m=>m.dispose());sprites.forEach(s=>s.material.dispose());cores.forEach(s=>s.material.dispose());trailMaterials.forEach(m=>m.dispose());haze.material.dispose();clouds.forEach(c=>c.material.dispose());cloudTexture.dispose();texture.dispose();renderer.dispose();renderer.domElement.remove();
