@@ -1,7 +1,7 @@
 import './lighting-controls.css';
 import { useState, useSyncExternalStore } from 'react';
 import { getLighting, subscribeLighting, updateLighting, LIGHTING_DEFAULTS, LIGHTING_RANGES, refreshLightingReflection } from '@/lib/console/lighting';
-const labels:Record<keyof typeof LIGHTING_RANGES,string>={ambient:'Ambient',environment:'Environment bounce',fill:'Front fill',desk:'Desk lamp',bedside:'Bedside lamp',window:'Window light',haze:'Window haze',exposure:'Exposure',screen:'Screen brightness',reflection:'Glass reflection',glassRoughness:'Glass roughness',clearcoatRoughness:'Clear-coat roughness'};
+const labels:Record<keyof typeof LIGHTING_RANGES,string>={ambient:'Ambient',environment:'Environment bounce',fill:'Front fill',desk:'Desk lamp',deskBeamAngle:'Desk beam angle',bedside:'Bedside lamp',window:'Window light',haze:'Atmospheric haze',exposure:'Exposure',screen:'Screen brightness',reflection:'Glass reflection',glassRoughness:'Glass roughness',clearcoatRoughness:'Clear-coat roughness'};
 export default function LightingControls(){
   const settings=useSyncExternalStore(subscribeLighting,getLighting,getLighting);
   const [open,setOpen]=useState(true),[exported,setExported]=useState(''),[status,setStatus]=useState('');
@@ -15,7 +15,7 @@ export default function LightingControls(){
       <p>Changes are live and saved in this browser. Development only.</p>
       {(Object.keys(labels) as (keyof typeof labels)[]).map(name=>{
         const [min,max,step]=LIGHTING_RANGES[name];
-        return <label className="lighting-dev-slider" key={name}><span>{labels[name]}<output>{Number(settings[name].toFixed(3))}</output></span><input type="range" aria-label={labels[name]} min={min} max={max} step={step} value={settings[name]} onChange={e=>updateLighting({[name]:Number(e.target.value)})}/></label>;
+        return <label className="lighting-dev-slider" key={name}><span>{labels[name]}<output>{Number(settings[name].toFixed(3))}{name==='deskBeamAngle'?'°':''}</output></span><input type="range" aria-label={labels[name]} min={min} max={max} step={step} value={settings[name]} onChange={e=>updateLighting({[name]:Number(e.target.value)})}/></label>;
       })}
       <label className="lighting-dev-color">Both lamp colours<input type="color" value={settings.lampColor} onChange={e=>updateLighting({lampColor:e.target.value})}/></label>
       <div className="lighting-dev-actions">

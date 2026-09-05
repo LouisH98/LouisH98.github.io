@@ -1,11 +1,11 @@
 export const LIGHTING_DEFAULTS = {
-  ambient:.45,environment:0,fill:2,desk:17.3,bedside:6,window:6,
-  haze:.062,exposure:.91,screen:.9,reflection:1.48,glassRoughness:.13,clearcoatRoughness:.055,
+  ambient:.45,environment:0,fill:2,desk:17.6,deskBeamAngle:82,bedside:2.1,window:6,
+  haze:.038,exposure:.91,screen:.9,reflection:1.48,glassRoughness:.13,clearcoatRoughness:.055,
   lampColor:'#ffb66d',
 };
 export type LightingSettings = typeof LIGHTING_DEFAULTS;
 export const LIGHTING_RANGES = {
-  ambient:[0,1.5,.01],environment:[0,2,.01],fill:[0,2,.01],desk:[0,24,.1],bedside:[0,20,.1],window:[0,60,.5],
+  ambient:[0,1.5,.01],environment:[0,2,.01],fill:[0,2,.01],desk:[0,24,.1],deskBeamAngle:[20,110,1],bedside:[0,20,.1],window:[0,60,.5],
   haze:[0,.12,.001],exposure:[.25,2.5,.01],screen:[0,3,.05],reflection:[0,2,.01],glassRoughness:[0,.5,.005],clearcoatRoughness:[0,.4,.005],
 } as const;
 const key='ps2folio:dev-lighting:v1';

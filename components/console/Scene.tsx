@@ -145,11 +145,13 @@ export default function Scene(props: Props) {
     const center=new THREE.Vector2(), target=new THREE.Vector2(); let radius=.28;
     const blue=new THREE.Color(0x398fff);
     const orbit=(i:number,t:number)=>new THREE.Vector2(Math.sin(t*1.13+i*1.57)*(.16+t*.018),Math.cos(t*.87+i*1.57)*.13+Math.sin(t*1.7+i)*.055);
+    let lastRoomFrame=0;
     const animate=(now:number)=>{
       frame=requestAnimationFrame(animate);
       const dt=Math.min((now-previous)/1000,.05); previous=now; if(document.hidden)return;
       const p=state.current;
-      if (p.powered === false && !roomDirty) return;
+      if (p.powered === false && !roomDirty && (p.reduced || now-lastRoomFrame<1000/24)) return;
+      lastRoomFrame=now;
       const roomActive=p.powered !== undefined && (!p.powered || (p.boot && crtZoom(p.elapsed)<1));
       const nextWidth=roomActive?resolution.roomWidth:resolution.uiWidth;
       const nextHeight=roomActive?resolution.roomHeight:resolution.uiHeight;
@@ -238,7 +240,7 @@ export default function Scene(props: Props) {
       renderer.clearDepth(); renderer.render(overlay,screenCamera);
       if (roomActive) {
         crt.render(renderer,curvature,time,televisionPicture,powerTime);
-        const anchor=bedroom.render(televisionPicture.texture,width,height,roomProgress,Boolean(p.powered),powerTime);
+        const anchor=bedroom.render(televisionPicture.texture,width,height,roomProgress,Boolean(p.powered),powerTime,p.reduced?0:now/1000);
         const button=p.powerButton?.current;
         if(button){button.style.left=`${anchor.x}px`;button.style.top=`${anchor.y}px`;button.style.width=`${anchor.size}px`;button.style.height=`${anchor.size}px`;}
         if(roomProgress>.82){handoffMaterial.opacity=smooth((roomProgress-.82)/.18);renderer.clearDepth();renderer.render(handoffScene,handoffCamera);}

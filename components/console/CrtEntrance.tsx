@@ -22,7 +22,7 @@ export default function CrtEntrance({ fallback, powerButton, children, powered, 
   const style = { ...(size ? crtLayout(size.width, size.height, progress) : {}), '--crt-presence': 1 - progress, '--crt-casing-opacity': 1 - smooth((progress - .65) / .35) } as CSSProperties;
   if (!fallback) return <div ref={stage} className="bedroom-stage" data-powered={powered}>
     {children}
-    {!powered && <button ref={powerButton} className="bedroom-power" onClick={onPower} disabled={!ready} aria-label="Power on CRT monitor" title="Power on"><span className="sr-only">Power on</span></button>}
+    {!powered && <button ref={powerButton} className="bedroom-power" onClick={onPower} disabled={!ready} aria-label="Power on CRT monitor" title="Power on"><span className="bedroom-power-glow" aria-hidden="true"/><span className="bedroom-power-label">Power on</span></button>}
   </div>;
   return <div ref={stage} className="crt-stage" data-power={powered ? 'on' : 'off'} data-fullscreen={full} data-warming={ignition !== null}>
     <div className="crt-set" style={style}>

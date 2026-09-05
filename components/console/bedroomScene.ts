@@ -54,28 +54,35 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
   for (let i=-8;i<=8;i++) box(.018,.005,16,i,-2.17,-2,seam,.001);
   box(4.1,.38,5.5,3.6,-1.82,-3.3,wood,.07);
   box(3.9,.48,5.3,3.6,-1.4,-3.3,sheet,.2);
-  const duvetGeometry=new THREE.PlaneGeometry(4.12,4.05,48,40);duvetGeometry.rotateX(-Math.PI/2);
-  const duvetPositions=duvetGeometry.attributes.position;
-  for(let i=0;i<duvetPositions.count;i++){
-    const x=duvetPositions.getX(i),z=duvetPositions.getZ(i);
-    const drape=Math.max(0,Math.abs(x)-1.82)*1.9+Math.max(0,z-1.7)*.6;
-    duvetPositions.setY(i,.035*Math.sin(x*12+z*.8)+.018*Math.sin(z*9+x*3)-drape);
-  }
-  duvetGeometry.computeVertexNormals();fabric.side=THREE.DoubleSide;
-  const duvet=new THREE.Mesh(duvetGeometry,fabric);duvet.position.set(3.6,-1.08,-2.66);duvet.castShadow=true;duvet.receiveShadow=true;room.add(duvet);
-  const pillow=box(1.55,.24,.88,3.5,-1.03,-5.12,sheet,.11); pillow.rotation.y=-.08;
-  box(4.2,1.1,.18,3.6,-1.46,-5.95,wood,.04);
-  // Desk, legs, keyboard and a cable disappearing behind the monitor.
+  // A smooth, thick quilt with a folded head edge and two ordinary pillows.
+  box(4.0,.16,3.95,3.6,-1.12,-2.58,fabric,.075);
+  box(4.0,.12,.36,3.6,-1.035,-4.38,fabric,.055);
+  for(const x of [2.64,4.5]) box(1.62,.25,.92,x,-1.02,-5.03,sheet,.12);
+  box(4.2,1.35,.18,3.6,-1.25,-5.95,wood,.04);
+  // Desk, legs, console and a cable disappearing behind the monitor.
   box(7.4,.22,3.3,-.45,-1.66,.1,wood,.055);
   box(7.25,.018,3.2,-.45,-1.54,.1,wood,.01);
   for(const x of [-3.7,2.8]) for(const z of [-1.15,1.35]) box(.13,.64,.13,x,-2,z,metal);
-  const keyboard = new THREE.Group(); keyboard.position.set(-.2,-1.43,1.13); keyboard.rotation.x=.07; room.add(keyboard);
-  const keyboardBody = new THREE.Mesh(new RoundedBoxGeometry(2.15,.1,.64,3,.035),charcoal); keyboard.add(keyboardBody);
-  const keyMat=mat('#606166', .65);
-  for(let row=0;row<4;row++) for(let col=0;col<14;col++) {
-    const key=new THREE.Mesh(new THREE.BoxGeometry(.115,.045,.102),keyMat);
-    key.position.set(-.94+col*.145,.073,-.23+row*.14); keyboard.add(key);
+  // Horizontal original PS2: stepped shell, cooling fins, tray and front ports.
+  const consoleBlack=mat('#11131a',.64), consoleBlue=mat('#284aa0',.42);
+  box(2.12,.22,.78,-.2,-1.41,1.13,consoleBlack,.018);
+  box(2.2,.045,.82,-.2,-1.285,1.13,charcoal,.008);
+  for(let i=0;i<6;i++) box(2.14,.012,.79,-.2,-1.49+i*.032,1.13,seam,.002);
+  box(.96,.085,.017,.23,-1.39,1.535,charcoal,.004);
+  for(const x of [-1.03,-.73]) {
+    box(.22,.035,.018,x,-1.355,1.537,seam,.003);
+    box(.2,.07,.02,x,-1.44,1.537,seam,.009);
   }
+  for(const y of [-1.375,-1.45]) box(.06,.024,.02,.72,y,1.54,metal,.003);
+  const logoCanvas=document.createElement('canvas');logoCanvas.width=256;logoCanvas.height=128;
+  const logoContext=logoCanvas.getContext('2d')!;
+  logoContext.fillStyle='#5377cf';logoContext.font='300 66px sans-serif';logoContext.fillText('PS2',50,74);
+  logoContext.font='12px sans-serif';logoContext.fillText('PlayStation 2',64,99);
+  const consoleLogo=new THREE.CanvasTexture(logoCanvas);consoleLogo.colorSpace=THREE.SRGBColorSpace;
+  const logoMaterial=new THREE.MeshBasicMaterial({map:consoleLogo,transparent:true,depthWrite:false});materials.push(logoMaterial);
+  const logo=new THREE.Mesh(new THREE.PlaneGeometry(.74,.37),logoMaterial);
+  logo.rotation.x=-Math.PI/2;logo.position.set(-.2,-1.259,1.12);room.add(logo);
+  box(.06,.028,.019,.77,-1.34,1.541,consoleBlue,.002);
   const cableCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(.9,-1.51,.9),new THREE.Vector3(1.9,-1.5,.2),new THREE.Vector3(1.1,-1.48,-.9)]);
   room.add(new THREE.Mesh(new THREE.TubeGeometry(cableCurve,24,.018,6,false),seam));
   // Small, useful clutter: cases and a controller left of the display, mug and notes right.
@@ -93,7 +100,7 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
   for(const [x,z] of [[-.21,-.025],[.21,-.025],[-.12,.12],[.12,.12]]){
     const control=new THREE.Mesh(new THREE.CylinderGeometry(.046,.046,.034,16),seam);control.position.set(x,.091,z);controller.add(control);
   }
-  const cord=new THREE.CatmullRomCurve3([new THREE.Vector3(-2.45,-1.4,.93),new THREE.Vector3(-3.1,-1.5,.45),new THREE.Vector3(-2.8,-1.5,-.65),new THREE.Vector3(-.8,-1.51,-1.15)]);
+  const cord=new THREE.CatmullRomCurve3([new THREE.Vector3(-2.45,-1.4,.93),new THREE.Vector3(-2.1,-1.5,1.57),new THREE.Vector3(-1.4,-1.5,1.68),new THREE.Vector3(-1.03,-1.44,1.55)]);
   room.add(new THREE.Mesh(new THREE.TubeGeometry(cord,40,.014,6,false),seam));
   const mug=new THREE.Mesh(new THREE.CylinderGeometry(.17,.14,.35,32,1,true),ceramic);mug.position.set(2.2,-1.34,.61);mug.castShadow=true;room.add(mug);
   const coffee=new THREE.Mesh(new THREE.CircleGeometry(.151,32),mat('#19110c',.2));coffee.rotation.x=-Math.PI/2;coffee.position.set(2.2,-1.195,.61);room.add(coffee);
@@ -143,16 +150,19 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
   const powerPosition=new THREE.Vector3(1.4,-1.18,.68);
   const powerKey=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,.035,32),metal);powerKey.rotation.x=Math.PI/2;powerKey.position.copy(powerPosition);room.add(powerKey);
   const ledMaterial=new THREE.MeshBasicMaterial({color:'#ff3b24'});materials.push(ledMaterial);
-  const led=new THREE.Mesh(new THREE.SphereGeometry(.018,12,8),ledMaterial);led.position.set(1.4,-1.18,.715);room.add(led);
-  const standby=new THREE.PointLight('#ff3925',.045,.7,2);standby.position.set(1.4,-1.18,.82);room.add(standby);
+  const led=new THREE.Mesh(new THREE.SphereGeometry(.029,16,12),ledMaterial);led.position.set(1.4,-1.18,.715);room.add(led);
+  const standby=new THREE.PointLight('#ff3925',.085,.7,2);standby.position.set(1.4,-1.18,.82);room.add(standby);
   const lampColor='#ffb66d', lampBounceColor='#cf976a';
   // Bedside practical, soft blue window, and monitor light on the desk.
-  box(.95,.85,.85,6.1,-1.7,-4.65,wood,.04);
-  const lampBase=new THREE.Mesh(new THREE.CylinderGeometry(.21,.25,.07,32),metal);lampBase.position.set(6.1,-1.23,-4.65);room.add(lampBase);
-  box(.035,.7,.035,6.1,-.9,-4.65,metal,.01);
+  box(1.12,1.1,.95,6.22,-1.58,-4.65,wood,.04);
+  box(1.22,.1,1.05,6.22,-.98,-4.65,wood,.025);
+  box(.96,.36,.025,6.22,-1.24,-4.16,charcoal,.015);
+  box(.22,.035,.035,6.22,-1.24,-4.13,metal,.01);
+  const lampBase=new THREE.Mesh(new THREE.CylinderGeometry(.21,.25,.07,32),metal);lampBase.position.set(6.22,-.89,-4.65);room.add(lampBase);
+  box(.035,.7,.035,6.22,-.53,-4.65,metal,.01);
   const shadeMat=new THREE.MeshStandardMaterial({color:'#c49a6a',roughness:.95,emissive:'#ef923b',emissiveIntensity:.35,side:THREE.DoubleSide});materials.push(shadeMat);
-  const shade=new THREE.Mesh(new THREE.CylinderGeometry(.32,.5,.54,48,1,true),shadeMat);shade.position.set(6.1,-.53,-4.65);room.add(shade);
-  const lamp=new THREE.PointLight(lampColor,6,12,2);lamp.position.set(6.1,-.65,-4.65);lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.bias=-.001;lamp.shadow.normalBias=.025;room.add(lamp);
+  const shade=new THREE.Mesh(new THREE.CylinderGeometry(.32,.5,.54,48,1,true),shadeMat);shade.position.set(6.22,-.16,-4.65);room.add(shade);
+  const lamp=new THREE.PointLight(lampColor,6,12,2);lamp.position.set(6.22,-.28,-4.65);lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.bias=-.001;lamp.shadow.normalBias=.025;room.add(lamp);
   const windowMaterial=new THREE.MeshPhysicalMaterial({color:'#7c93a8',transparent:true,opacity:.075,depthWrite:false,roughness:.12,metalness:0});materials.push(windowMaterial);
   const windowPane=box(.025,2.28,1.84,-4.48,1.9,-.8,windowMaterial,.01);windowPane.castShadow=false;
   box(.055,2.4,.07,-4.44,1.9,-.8,wood,.01);
@@ -166,20 +176,19 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
   const fill=new THREE.DirectionalLight('#c5d5e9',.42);fill.position.set(-2,4,5);room.add(fill);
   const warmBounce=new THREE.PointLight(lampBounceColor,.8,5,2);warmBounce.position.set(4.3,-.4,-4.5);room.add(warmBounce);
   const screenLight=new THREE.PointLight('#709eff',0,6,2);screenLight.position.set(0,.1,1.1);room.add(screenLight);
-  // A shaded task lamp directs a warm pool at the keyboard, rather than lighting the whole room.
+  // A shaded task lamp directs a warm pool at the console, rather than lighting the whole room.
   const deskLampMat=mat('#34433f',.34,.55);
-  const taskBase=new THREE.Mesh(new THREE.CylinderGeometry(.29,.34,.09,48),deskLampMat);taskBase.position.set(-3.08,-1.46,.02);taskBase.castShadow=true;room.add(taskBase);
-  const armPath=new THREE.CatmullRomCurve3([new THREE.Vector3(-3.08,-1.43,.02),new THREE.Vector3(-3.08,-.45,.02),new THREE.Vector3(-2.99,.39,.12),new THREE.Vector3(-2.65,.55,.8)]);
+  const taskBase=new THREE.Mesh(new THREE.CylinderGeometry(.29,.34,.09,48),deskLampMat);taskBase.position.set(-3.65,-1.46,-.8);taskBase.castShadow=true;room.add(taskBase);
+  const armPath=new THREE.CatmullRomCurve3([new THREE.Vector3(-3.65,-1.43,-.8),new THREE.Vector3(-3.65,-.45,-.8),new THREE.Vector3(-3.56,.39,-.7),new THREE.Vector3(-3.22,.55,-.02)]);
   const taskArm=new THREE.Mesh(new THREE.TubeGeometry(armPath,40,.033,12,false),deskLampMat);taskArm.castShadow=true;room.add(taskArm);
-  const keyboardTarget=new THREE.Vector3(-.2,-1.36,1.13);
-  const taskDirection=keyboardTarget.clone().sub(new THREE.Vector3(-2.65,.55,.8)).normalize();
+  const consoleTarget=new THREE.Vector3(-.2,-1.25,1.13);
+  const taskDirection=consoleTarget.clone().sub(new THREE.Vector3(-3.22,.55,-.02)).normalize();
   const taskShade=new THREE.Mesh(new THREE.CylinderGeometry(.13,.34,.35,48,1,true),deskLampMat);taskShade.material.side=THREE.DoubleSide;
-  taskShade.position.set(-2.65,.55,.8);taskShade.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),taskDirection);taskShade.castShadow=true;room.add(taskShade);
+  taskShade.position.set(-3.22,.55,-.02);taskShade.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),taskDirection);taskShade.castShadow=true;room.add(taskShade);
   const diffuserMaterial=new THREE.MeshBasicMaterial({color:new THREE.Color(lampColor).multiplyScalar(2.2)});materials.push(diffuserMaterial);
   const diffuser=new THREE.Mesh(new THREE.CircleGeometry(.285,48),diffuserMaterial);diffuser.position.copy(taskShade.position).addScaledVector(taskDirection,.18);diffuser.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),taskDirection);room.add(diffuser);
-  const taskLight=new THREE.SpotLight(lampColor,8,7,.7,.72,2);taskLight.position.copy(diffuser.position).addScaledVector(taskDirection,.045);taskLight.target.position.copy(keyboardTarget);taskLight.castShadow=true;taskLight.shadow.mapSize.set(1024,1024);taskLight.shadow.bias=-.0004;taskLight.shadow.normalBias=.02;taskLight.shadow.radius=3;room.add(taskLight,taskLight.target);
-  // The lit keyboard is captured by the reflection probe. A point-light bounce here
-  // produced a fictional pinprick in the glass instead of reflecting the keycaps.
+  const taskLight=new THREE.SpotLight(lampColor,8,8,.95,.65,2);taskLight.position.copy(diffuser.position).addScaledVector(taskDirection,.045);taskLight.target.position.copy(consoleTarget);taskLight.castShadow=true;taskLight.shadow.mapSize.set(1024,1024);taskLight.shadow.bias=-.0004;taskLight.shadow.normalBias=.02;taskLight.shadow.radius=3;room.add(taskLight,taskLight.target);
+  // Nearby objects are reflected by the room probe, without a fake point-light bounce.
 
   // A dimensional night view: clouded sky, distant rooftops, and scattered apartment windows.
   const skyMaterial=new THREE.ShaderMaterial({depthWrite:false,vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,fragmentShader:`varying vec2 vUv;void main(){float clouds=sin(vUv.x*18.0+sin(vUv.y*27.0))*sin(vUv.y*21.0+vUv.x*5.0);vec3 sky=mix(vec3(.04,.065,.105),vec3(.006,.014,.032),smoothstep(0.0,1.0,vUv.y));sky+=vec3(.004,.006,.009)*smoothstep(.1,.8,clouds);gl_FragColor=vec4(sky,1.0);#include <colorspace_fragment>}`.replace(';#include',';\n#include')});materials.push(skyMaterial);
@@ -195,6 +204,49 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
     }
   }
 
+  // Dust occupies both the room and the task lamp's pool, drifting in slow air currents.
+  const dustGeometry=new THREE.BufferGeometry();
+  const dustPositions=new Float32Array(360*3);
+  let dustSeed=431;
+  const randomDust=()=>{dustSeed=dustSeed*16807%2147483647;return dustSeed/2147483647;};
+  for(let i=0;i<360;i++){
+    const nearDesk=i<210;
+    dustPositions[i*3]=nearDesk?-3.85+randomDust()*3.8:-4.2+randomDust()*10;
+    dustPositions[i*3+1]=-1.35+randomDust()*4.5;
+    dustPositions[i*3+2]=nearDesk?-.75+randomDust()*2.3:-5.4+randomDust()*4.2;
+  }
+  dustGeometry.setAttribute('position',new THREE.BufferAttribute(dustPositions,3));
+  const dustMaterial=new THREE.ShaderMaterial({
+    uniforms:{time:{value:0},pixelRatio:{value:1},lampPosition:{value:taskLight.position},
+      lampDirection:{value:taskDirection},lampColor:{value:new THREE.Color(lampColor)},
+      lampStrength:{value:1},lampOuter:{value:0},lampInner:{value:0}},transparent:true,depthWrite:false,
+    vertexShader:`uniform float time;uniform float pixelRatio;
+      uniform vec3 lampPosition;uniform vec3 lampDirection;uniform vec3 lampColor;
+      uniform float lampStrength;uniform float lampOuter;uniform float lampInner;
+      varying float visibility;varying vec3 moteColor;
+      void main(){
+        float phase=position.x*7.3+position.z*4.1;
+        vec3 p=position;
+        // Distinct fall speeds plus overlapping eddies avoid synchronized bobbing.
+        float height=mod(position.y+1.35-time*(.025+.012*sin(phase)),4.5);
+        p.y=height-1.35;
+        p.x+=sin(time*.48+phase)*.14+sin(time*.17+phase*2.3)*.18;
+        p.z+=sin(time*.31+phase*1.7)*.13;
+        vec3 ray=p-lampPosition;
+        float cone=smoothstep(lampOuter,lampInner,dot(normalize(ray),lampDirection));
+        float warm=cone*lampStrength/(1.0+dot(ray,ray)*.2);
+        visibility=.75*warm*smoothstep(0.0,.25,height)*(1.0-smoothstep(4.2,4.5,height));
+        moteColor=lampColor;
+        vec4 viewPosition=modelViewMatrix*vec4(p,1.0);
+        gl_Position=projectionMatrix*viewPosition;
+        gl_PointSize=clamp(12.0/-viewPosition.z,.8,1.8)*pixelRatio;
+      }`,
+    fragmentShader:`varying float visibility;varying vec3 moteColor;
+      void main(){float r=length(gl_PointCoord-.5)*2.0;
+      if(r>1.0)discard;gl_FragColor=vec4(moteColor,(1.0-smoothstep(.05,1.0,r))*visibility);}`
+  });materials.push(dustMaterial);
+  const dust=new THREE.Points(dustGeometry,dustMaterial);dust.frustumCulled=false;room.add(dust);
+
   // Capture the actual room from the glass, excluding the screen itself to avoid feedback.
   // This is a static environment probe, not a painted reflection or screen-space approximation.
   const reflectionTarget=new THREE.WebGLCubeRenderTarget(window.innerWidth < 600 ? 512 : 1024,{type:renderer.extensions.has('EXT_color_buffer_float')?THREE.HalfFloatType:THREE.UnsignedByteType});
@@ -205,11 +257,18 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
     const p=getLighting();
     ambient.intensity=p.ambient;fill.intensity=p.fill;room.environmentIntensity=p.environment;
     lamp.intensity=p.bedside;taskLight.intensity=p.desk;moon.intensity=p.window;
+    // UI shows the full cone width; Three.js uses its half-angle in radians.
+    const beamAngle=THREE.MathUtils.degToRad(p.deskBeamAngle/2);
+    if(taskLight.angle!==beamAngle){taskLight.angle=beamAngle;renderer.shadowMap.needsUpdate=true;}
+    dustMaterial.uniforms.lampOuter.value=Math.cos(beamAngle);
+    dustMaterial.uniforms.lampInner.value=Math.cos(beamAngle*(1-taskLight.penumbra));
     lamp.color.set(p.lampColor);taskLight.color.set(p.lampColor);
+    dustMaterial.uniforms.lampColor.value.set(p.lampColor);
+    dustMaterial.uniforms.lampStrength.value=p.desk/17.3;
     const bounceColor=p.lampColor===LIGHTING_DEFAULTS.lampColor?lampBounceColor:p.lampColor;
     warmBounce.color.set(bounceColor);
     warmBounce.intensity=p.bedside/6*.8;
-    diffuserMaterial.color.set(p.lampColor).multiplyScalar(2.2*p.desk/8);
+    diffuserMaterial.color.set(p.lampColor).multiplyScalar(2.4*p.desk/17.6);
     shadeMat.emissive.set(p.lampColor===LIGHTING_DEFAULTS.lampColor?'#ef923b':p.lampColor);shadeMat.emissiveIntensity=.35*p.bedside/6;
     screenMaterial.envMapIntensity=p.reflection;screenMaterial.roughness=p.glassRoughness;screenMaterial.clearcoatRoughness=p.clearcoatRoughness;
   }
@@ -222,9 +281,11 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
     // Never bake the previous probe into its replacement when refreshing settings.
     room.environment=null;
     screen.visible=false;
+    dust.visible=false;
     try { probe.update(renderer,room); }
     finally {
       screen.visible=previousVisibility;
+      dust.visible=true;
       room.environment=previousEnvironment;
       renderer.shadowMap.autoUpdate=previousShadowUpdate;
     }
@@ -236,7 +297,9 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
   const anchor=new THREE.Vector3(),edge=new THREE.Vector3();
   const target=new THREE.Vector3(0,.11,.72);
   return {
-    render(picture:THREE.Texture, width:number,height:number,progress:number,powered:boolean,ignition:number|null) {
+    render(picture:THREE.Texture, width:number,height:number,progress:number,powered:boolean,ignition:number|null,time=0) {
+      dustMaterial.uniforms.time.value=time;
+      dustMaterial.uniforms.pixelRatio.value=renderer.getDrawingBufferSize(new THREE.Vector2()).y/height;
       applyLighting();
       if(reflectionRevision!==getReflectionRevision()){captureReflection();reflectionRevision=getReflectionRevision();}
       camera.aspect=width/height;
@@ -250,13 +313,13 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
       if(Boolean(screenMaterial.userData.powered)!==powered){screenMaterial.needsUpdate=true;screenMaterial.userData.powered=powered;}
       ledMaterial.color.set(powered?'#9ee863':'#ff3b24');standby.color.copy(ledMaterial.color);
       screenLight.intensity=powered?(ignition!==null?2:1.3):0;
-      renderer.setRenderTarget(null);renderer.setClearColor('#090d15',1);atmosphere.render(renderer,room,camera);
+      renderer.setRenderTarget(null);renderer.setClearColor('#090d15',1);atmosphere.render(renderer,room,camera,taskLight);
       anchor.copy(powerPosition).project(camera);edge.copy(powerPosition).add(new THREE.Vector3(.11,0,0)).project(camera);
       return { x:(anchor.x+1)*width/2,y:(1-anchor.y)*height/2,size:Math.max(44,Math.abs(edge.x-anchor.x)*width) };
     },
     dispose() {
       const geometries=new Set<THREE.BufferGeometry>();room.traverse(o=>{if(o instanceof THREE.Mesh)geometries.add(o.geometry);});
-      geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());grain.dispose();woodGrain.dispose();environment?.dispose();reflectionTarget.dispose();
+      geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());dustGeometry.dispose();grain.dispose();woodGrain.dispose();consoleLogo.dispose();environment?.dispose();reflectionTarget.dispose();
       atmosphere.dispose();lamp.dispose();moon.dispose();taskLight.dispose();
     },
   };
