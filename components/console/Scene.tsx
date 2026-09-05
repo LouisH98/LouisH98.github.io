@@ -3,7 +3,7 @@ import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import { createIntroProfiler } from './introProfiler';
 import { createSettingsSculpture } from './settingsSculpture';
-import { assignParticleSlots, cityParticle, incomingParticle, joinedParticle, particleSlot, type ParticleJoin } from '@/lib/console/particleMotion';
+import { assignParticleSlots, cityParticle, incomingParticle, joinedParticle, menuParticleSlot, particleSlot, type ParticleJoin } from '@/lib/console/particleMotion';
 import { bootFrame, smooth } from '@/lib/console/timeline';
 import { crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
 import { subscribeLighting } from '@/lib/console/lighting';
@@ -76,8 +76,18 @@ export default function Scene(props: Props) {
     const sprites=Array.from({length:8},(_,i)=>{
       const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,color:colors[i%4],blending:THREE.AdditiveBlending,depthWrite:false})); overlay.add(sprite); return sprite;
     });
+    const coreCanvas=document.createElement('canvas');coreCanvas.width=coreCanvas.height=128;
+    const coreContext=coreCanvas.getContext('2d')!;
+    const coreGradient=coreContext.createRadialGradient(64,64,0,64,64,64);
+    coreGradient.addColorStop(0,'rgba(255,255,255,1)');
+    coreGradient.addColorStop(.18,'rgba(255,255,255,.94)');
+    coreGradient.addColorStop(.42,'rgba(255,255,255,.55)');
+    coreGradient.addColorStop(.7,'rgba(255,255,255,.12)');
+    coreGradient.addColorStop(1,'rgba(255,255,255,0)');
+    coreContext.fillStyle=coreGradient;coreContext.fillRect(0,0,128,128);
+    const coreTexture=new THREE.CanvasTexture(coreCanvas);
     const cores=sprites.map(()=>{
-      const core=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,color:0xe6fbff,blending:THREE.AdditiveBlending,depthWrite:false}));overlay.add(core);return core;
+      const core=new THREE.Sprite(new THREE.SpriteMaterial({map:coreTexture,color:0xe6fbff,blending:THREE.AdditiveBlending,depthWrite:false}));overlay.add(core);return core;
     });
     type Sample = { time:number; x:number; y:number; size:number; opacity:number; color:THREE.Color };
     const histories: Sample[][] = sprites.map(()=>[]);
@@ -155,10 +165,10 @@ export default function Scene(props: Props) {
     // first-use uniform/buffer initialization on every driver.
     crt.render(renderer,0,0);
     let frame=0,time=0,previous=0,initialized=false;
-    let settingsAmount=0;
+    let settingsAmount=0,ringMotion=0,menuTime=0;
     let backgroundAlpha=state.current.boot?1:0;
     const center=new THREE.Vector2(), target=new THREE.Vector2(); let radius=.28;
-    const blue=new THREE.Color(0x398fff);
+    const blue=new THREE.Color(0x359bbf);
     let joins:ParticleJoin[]=[];
     const previousCenter=new THREE.Vector2();
     let lastRoomFrame=0;
@@ -220,24 +230,46 @@ export default function Scene(props: Props) {
         const slots=assignParticleSlots(flights.map(f=>f.start),flights.map(f=>f.velocity),12,radius);
         joins=flights.map((f,i)=>({...f,slot:slots[i],startTime:pictureTime,endTime:12,radius}));
       }
+      if(p.boot)menuTime=0;
+      else if(!p.reduced&&p.view==='menu')menuTime+=dt;
+      ringMotion=THREE.MathUtils.lerp(ringMotion,!p.boot&&p.view==='menu'&&!p.reduced?1:0,1-Math.exp(-dt/1.2));
+      // Long face-on rests, followed by slow, asymmetric excursions and returns.
+      const restingTurn=(seconds:number,period:number,delay:number,peak:number)=>{
+        const phase=(seconds%period)/period;
+        if(phase<delay)return 0;
+        const move=(phase-delay)/(1-delay);
+        return peak*(move<.45?smooth(move/.45):1-smooth((move-.45)/.55));
+      };
+      const pitch=restingTurn(menuTime+7,26,.12,1.05)*ringMotion;
+      const yaw=restingTurn(menuTime+10,33,.15,-.9)*ringMotion;
+      const pitchCos=Math.cos(pitch),pitchSin=Math.sin(pitch);
+      const yawCos=Math.cos(yaw),yawSin=Math.sin(yaw);
       for(let i=0;i<8;i++){
         // Four existing lights keep their identities; four enter from beyond
         // the screen edges into the alternating vacant ring slots.
         const parent=Math.floor(i/2);
         const newcomer=i%2===1;
         const slot=particleSlot(joins[i]?.slot??i,time,radius);
-        const depth=slot.depth;
+        // Gathering begins after menu entry; orbital rotation never resets.
+        const gathered=menuParticleSlot(joins[i]?.slot??i,time,radius,ringMotion,menuTime);
+        let depth=slot.depth;
         const ring={x:center.x+slot.x,y:center.y+slot.y};
         const start=newcomer?incomingParticle(parent,pictureTime,sourceAspect):cityParticle(parent,pictureTime,sourceAspect);
         const flight=joins[i]?joinedParticle(joins[i],time):null;
         const position=flight?{x:center.x+flight.x*radius/joins[i].radius,y:center.y+flight.y*radius/joins[i].radius}:p.boot?start:ring;
-        const sprite=sprites[i]; sprite.position.set(position.x,position.y,0);
+        // Rotate the whole ring around X and Y while preserving particle spacing.
+        const localX=position.x-center.x+gathered.x-slot.x,localY=position.y-center.y+gathered.y-slot.y;
+        const tiltedY=localY*pitchCos,tiltedZ=localY*pitchSin;
+        const rotatedX=localX*yawCos+tiltedZ*yawSin;
+        const rotatedZ=-localX*yawSin+tiltedZ*yawCos;
+        depth+=rotatedZ/Math.max(radius,.001)*.45;
+        const sprite=sprites[i]; sprite.position.set(center.x+rotatedX,center.y+tiltedY,0);
         sprite.material.color.setHex(colors[parent]).lerp(blue,smooth((morph-.35)/.65));
-        sprite.material.opacity=1+depth*.18*morph;
+        sprite.material.opacity=(1+depth*.18*morph)*(1-.35*morph);
         const size=THREE.MathUtils.lerp(.058,radius*(.46+depth*.09),smooth((morph-.2)/.8));
         sprite.scale.setScalar(size);
-        const core=cores[i];core.position.copy(sprite.position);core.scale.setScalar(size*.32);
-        core.material.opacity=sprite.material.opacity*(.3+morph*.6);
+        const core=cores[i];core.position.copy(sprite.position);core.scale.setScalar(size*THREE.MathUtils.lerp(.32,.65,morph));
+        core.material.opacity=(1+depth*.18*morph)*(.3+morph*.75);
         // Trails sample actual displayed positions, including morph and route interpolation.
         // Time-based sampling keeps the same tail length on 60/120/144 Hz displays.
         const history=histories[i];
@@ -275,7 +307,7 @@ export default function Scene(props: Props) {
       disposed = true; unsubscribeLighting();bedroom.dispose();televisionPicture.dispose();crt.dispose(); titleTexture.dispose(); titleMaterial.dispose(); titleGeometry.dispose();
       cancelAnimationFrame(frame);observer.disconnect();renderer.domElement.removeEventListener('webglcontextlost',lost);
       sculpture.dispose();fadePlane.geometry.dispose();fadePlane.material.dispose();
-      towerInstances.dispose();box.dispose();materials.forEach(m=>m.dispose());sprites.forEach(s=>s.material.dispose());cores.forEach(s=>s.material.dispose());trailMaterials.forEach(m=>m.dispose());haze.material.dispose();clouds.forEach(c=>c.material.dispose());cloudTexture.dispose();texture.dispose();renderer.dispose();renderer.domElement.remove();
+      towerInstances.dispose();box.dispose();materials.forEach(m=>m.dispose());sprites.forEach(s=>s.material.dispose());cores.forEach(s=>s.material.dispose());trailMaterials.forEach(m=>m.dispose());haze.material.dispose();clouds.forEach(c=>c.material.dispose());cloudTexture.dispose();coreTexture.dispose();texture.dispose();renderer.dispose();renderer.domElement.remove();
     };
   }, []);
   return <div className="scene" ref={host} aria-hidden="true" />;

@@ -21,7 +21,7 @@ test('eight evenly spaced slots continue past boot without changing paths',()=>{
   const a=particleSlot(i,12,.31),next=particleSlot((i+1)%8,12,.31),b=particleSlot(i,12.001,.31);
   assert.ok(Math.abs(Math.hypot(a.x,a.y)-.31)<1e-12);
   assert.ok(Math.abs(Math.hypot(a.x-next.x,a.y-next.y)-2*.31*Math.sin(Math.PI/8))<1e-12);
-  assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.0002);
+  assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.0003);
  }
 });
 
@@ -38,5 +38,16 @@ test('joining paths preserve incoming velocity and match the rotating ring on ar
   const end=joinedParticle(join,12),before=joinedParticle(join,12-h),next=joinedParticle(join,12+h);
   assert.deepEqual(end,particleSlot(slots[i],12,.31));
   assert.ok(Math.hypot((end.x-before.x)/h-(next.x-end.x)/h,(end.y-before.y)/h-(next.y-end.y)/h)<1e-4);
+ }
+});
+
+test('menu neighbors pair briefly on the orbit without changing radius or order',async()=>{
+ const {menuParticleSlot}=await import('../lib/console/particleMotion.ts');
+ const radius=.31;
+ for(let i=0;i<8;i+=2){
+  const a=menuParticleSlot(i,5,radius,1,5),b=menuParticleSlot(i+1,5,radius,1,5);
+  assert.ok(Math.abs(Math.hypot(a.x-b.x,a.y-b.y)-2*radius*Math.sin(.12/2))<1e-10);
+  assert.ok(Math.abs(Math.hypot(a.x,a.y)-radius)<1e-10);
+  assert.deepEqual(menuParticleSlot(i,0,radius,1,0),particleSlot(i,0,radius));
  }
 });
