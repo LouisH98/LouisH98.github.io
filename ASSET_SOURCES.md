@@ -61,3 +61,7 @@ Memory-card Browser layout follows the owner-supplied screenshot: gray gradient,
 - Refraction now uses a custom Snell-law screen-space shader (IOR 1.45). Each piece captures the other pieces behind its center, excluding itself and nearer objects, plus the orb overlay. Captures are bounded to 320 pixels wide (192 on small render buffers), use lightweight transparent proxies, and are disposed on scene cleanup. This is a single-bounce approximation with center-depth ordering, not recursive ray tracing through intersecting glass.
 - Configuration selection highlights follow the cyan glass accents visible in the reference: Sound, Animation, and Replay Intro each illuminate a different cube/prism pair. Highlights crossfade on selection and switch immediately with reduced motion; their emissive proxy is included in other pieces' refraction captures.
 - The aligned radial shard plane slowly pitches, yaws, and rolls as a whole. Main-menu lights follow a shared orbit, compress into an ordered queue, then return to equal spacing; their trails sample their actual displayed positions.
+
+## CRT entrance casing
+
+`public/textures/crt-casing.png` is original generated artwork created with the built-in imagegen tool on 5 September 2026. It provides the textured casing and transparent screen opening; live content, glass reflections, power button, and shader are rendered by the site. No third-party television branding is included.

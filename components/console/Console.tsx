@@ -3,10 +3,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import BitmapText from './BitmapText';
 import ControlIcon from './ControlIcon';
 import Scene from './Scene';
+import CrtEntrance from './CrtEntrance';
+import { crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
 import SaveIcon from './SaveIcon';
 import ProjectDetail from './ProjectDetail';
 import Settings from './Settings';
-import { BOOT_DURATION, BOOT_KEY, bootFrame } from '@/lib/console/timeline';
+import { BOOT_DURATION } from '@/lib/console/timeline';
 import { Volume2, VolumeX, ArrowUpRight } from 'lucide-react';
 import { about, projects } from '@/lib/console/content';
 import { parseHash, routeHash, type Route } from '@/lib/console/navigation';
@@ -15,6 +17,8 @@ import { ConsoleAudio } from '@/lib/console/audio';
 const menu = [{ title: 'Browser', view: 'browser' }, { title: 'About Me', view: 'about' }, { title: 'System Configuration', view: 'settings' }] as const;
 export default function Console() {
   const [ready, setReady] = useState(false), [boot, setBoot] = useState(false), [elapsed, setElapsed] = useState(0);
+  const [powered, setPowered] = useState(false);
+  const powerState = useRef(false);
   const [changing, setChanging] = useState(false);
   const [settingIndex,setSettingIndex]=useState(0);
   const transition = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,17 +34,15 @@ export default function Console() {
   const currentRoute = useRef(route); currentRoute.current = route;
   const focusByView = useRef<Record<string, string>>({}), reducedOverride = useRef(false);
   motionState.current = reduced;
-  const finish = useCallback(() => { setBoot(false); try { sessionStorage.setItem(BOOT_KEY, '1'); } catch {} }, []);
+  const finish = useCallback(() => { setBoot(false); }, []);
 
   useEffect(() => {
     const media = matchMedia('(prefers-reduced-motion: reduce)');
     setReduced(media.matches); setRoute(parseHash(location.hash));
-    let visited = false; try { visited = Boolean(sessionStorage.getItem(BOOT_KEY)); } catch {}
-    setBoot(!visited && !location.hash && !media.matches);
     audio.current = new ConsoleAudio(() => currentFrame.current, setAudioError);
     setReady(true);
     const unlock = (event?: Event) => {
-      if (!soundWanted.current || audioUnlocked.current || audioUnlocking.current) return;
+      if (!powerState.current || !soundWanted.current || audioUnlocked.current || audioUnlocking.current) return;
       if (event?.target instanceof Element && event.target.closest('[data-sound-toggle]')) return;
       audioUnlocking.current = true;
       void audio.current?.enable(!event).then(enabled => {
@@ -49,7 +51,6 @@ export default function Console() {
         audioUnlocked.current = enabled; setAudioReady(enabled);
       });
     };
-    unlock();
     addEventListener('pointerdown', unlock); addEventListener('keydown', unlock);
     const hash = () => {
       const active = document.activeElement;
@@ -67,12 +68,12 @@ export default function Console() {
 
   useEffect(() => {
     if (!ready || !boot) return;
-    let previous = performance.now(), time = 0;
-    setElapsed(0);
+    let previous = performance.now(), time = currentFrame.current.elapsed;
     let id = 0;
-    const tick = (now: number) => { if (!document.hidden) time += (now - previous) / 1000; previous = now;
+    const tick = (now: number) => { const wasWarming = time < 0; if (!document.hidden) time += (now - previous) / 1000; previous = now;
       currentFrame.current = { boot: true, elapsed: time };
       setElapsed(time);
+      if (wasWarming && time >= 0) audio.current?.sync(true);
       if (time >= BOOT_DURATION) finish();
       else id = requestAnimationFrame(tick);
     };
@@ -83,14 +84,14 @@ export default function Console() {
   }, [ready, boot, finish]);
   useEffect(() => { audio.current?.sync(); }, [boot]);
   useEffect(() => {
-    if (!ready || boot) return;
+    if (!ready || !powered || boot) return;
     const frame = requestAnimationFrame(() => {
       const remembered = focusByView.current[route.view];
       const target = (remembered ? document.getElementById(remembered) : null) || root.current?.querySelector<HTMLElement>(route.view === 'menu' ? '#menu-browser' : route.view === 'browser' ? `#save-${projects[0].id}` : '[data-screen-heading]');
       target?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
-  }, [ready, boot, route]);
+  }, [ready, powered, boot, route]);
 
   useEffect(() => {
     if (optionsOpen) root.current?.querySelector<HTMLElement>('.save-options a')?.focus();
@@ -106,7 +107,7 @@ export default function Console() {
   }, [boot, route.view, finish]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (!powerState.current || event.altKey || event.ctrlKey || event.metaKey) return;
       if (event.key === 'Escape') { event.preventDefault(); if (optionsOpen) { setOptionsOpen(false); document.getElementById(`save-${projects[save].id}`)?.focus(); } else goBack(); return; }
       if (boot) return;
       const target = event.target as HTMLElement;
@@ -126,6 +127,26 @@ export default function Console() {
     };
     addEventListener('keydown', onKey); return () => removeEventListener('keydown', onKey);
   }, [boot, route.view, goBack, optionsOpen, save]);
+  function powerOn() {
+    if (!ready || powerState.current) return;
+    powerState.current = true;
+    const intro = parseHash(location.hash).view === 'menu' && !reduced && !failed;
+    const start = intro ? -CRT_POWER_DURATION : 0;
+    setElapsed(start); currentFrame.current = { boot: intro, elapsed: start };
+    setBoot(intro); setPowered(true);
+    if (soundWanted.current) {
+      audioUnlocking.current = true;
+      void audio.current?.enable().then(enabled => {
+        audioUnlocking.current = false;
+        if (!soundWanted.current) return;
+        audioUnlocked.current = Boolean(enabled); setAudioReady(Boolean(enabled));
+      });
+    }
+  }
+  const warming = boot && elapsed < 0;
+  useEffect(() => {
+    if (powered && boot && !warming) root.current?.querySelector<HTMLButtonElement>('.boot-bottom button')?.focus({ preventScroll: true });
+  }, [powered, boot, warming]);
   async function toggleSound() {
     setAudioError('');
     const wanted = !soundWanted.current;
@@ -140,7 +161,7 @@ export default function Console() {
     if (reduced || failed) return;
     if (transition.current) clearTimeout(transition.current); setChanging(false);
     remember(); history.replaceState(null, '', `${location.pathname}${location.search}#/`); setRoute({ view: 'menu' });
-    setElapsed(0); currentFrame.current = { boot: true, elapsed: 0 }; setBoot(true); audio.current?.sync(true);
+    setElapsed(-CRT_POWER_DURATION); currentFrame.current = { boot: true, elapsed: -CRT_POWER_DURATION }; setBoot(true); audio.current?.sync(true);
   }
   function selection(index: number, kind: 'menu' | 'save') {
     if (kind === 'menu') { if (selected !== index) audio.current?.cue(route.view === 'settings' ? 'setting' : 'move'); setSelected(index); }
@@ -148,15 +169,15 @@ export default function Console() {
   }
   const project = projects.find(p => p.id === route.projectId) || projects[0];
   const title = route.view === 'browser' ? 'Browser' : route.view === 'about' ? 'About Me' : route.view === 'settings' ? 'System Configuration' : 'Memory Card (PS2) / 1';
-  return <main ref={root} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
+  return <CrtEntrance powered={powered} ready={ready} powerTime={warming ? elapsed + CRT_POWER_DURATION : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powerOn}><main ref={root} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
     <h1 className="sr-only">Louis’s portfolio</h1>
     <div className="screen-haze" aria-hidden="true" />
-    {ready && !failed && <Scene settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
+    {ready && powered && !failed && <Scene settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
     <div className="transition-black" style={{ opacity: !reduced && !boot && changing ? 1 : 0 }} aria-hidden="true" />
     <header className="console-top"><button id="sound-control" data-sound-toggle className="sound-button" onClick={toggleSound} aria-pressed={sound} aria-busy={soundLoading} aria-label={sound ? 'Mute sound' : 'Enable sound'} title={sound ? 'Mute sound' : 'Enable sound'}>{sound ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}</button></header>
     {audioError && <output className="audio-status">{audioError}</output>}
     {boot ? <>
-      <div className="boot-titles" style={{ opacity: bootFrame(elapsed).title }}><p><BitmapText>Louis Computer Entertainment</BitmapText></p></div>
+      <output className="sr-only">Louis Computer Entertainment. Starting up.</output>
       <div className="boot-bottom"><button onClick={finish} aria-label="Skip intro"><span>Skip intro</span><ControlIcon kind="cross" /></button></div>
     </> : <div key={`${route.view}-${route.projectId || ""}`} className={`screen-content ${changing ? "is-changing" : ""}`}>
       {route.view === 'menu' ? <>
@@ -192,5 +213,5 @@ export default function Console() {
       </footer>
     </div>}
     <noscript><div className="noscript-portfolio"><h1>Hey! I’m Louis.</h1><p>Creative coding, hardware experiments, and 3D printing.</p><ul>{projects.map(p=><li key={p.id}><a href={p.url}>{p.title}</a><p>{p.summary}</p></li>)}</ul><a href={about.url}>Find me on GitHub</a></div></noscript>
-  </main>;
+  </main></CrtEntrance>;
 }

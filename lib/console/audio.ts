@@ -45,7 +45,10 @@ export class ConsoleAudio {
   private stopBackground() { try { this.background?.stop(); } catch {} this.background = undefined; this.mode = undefined; }
   sync(force = false) {
     if (!this.enabled || !this.context || document.hidden) return;
-    const frame = this.frame(); const mode = frame.boot ? 'boot' : 'ambience';
+    const frame = this.frame();
+    // Unlock/decode on the power gesture, but keep the CRT ignition silent.
+    if (frame.boot && frame.elapsed < 0) { this.stopBackground(); return; }
+    const mode = frame.boot ? 'boot' : 'ambience';
     if (mode === this.mode && !force) return;
     this.stopBackground(); this.mode = mode;
     const buffer = this.buffers.get(mode); if (!buffer) return;
@@ -57,6 +60,7 @@ export class ConsoleAudio {
     source.start(0, offset); this.background = source;
   }
   cue(cue: Cue) {
+    if (this.frame().boot && this.frame().elapsed < 0) return;
     if (!this.enabled || !this.context || document.hidden) return;
     const buffer = this.buffers.get(cue); if (!buffer) return;
     const source = this.context.createBufferSource(), gain = this.context.createGain();

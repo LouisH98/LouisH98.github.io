@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createSettingsSculpture } from './settingsSculpture';
 import { bootFrame, smooth } from '@/lib/console/timeline';
+import { crtZoom } from '@/lib/console/crt';
+import { createCrtShader } from './crtShader';
 type Props = { settingIndex?:number; boot: boolean; elapsed: number; reduced: boolean; view: string; onFailure: () => void };
 export default function Scene(props: Props) {
   const host = useRef<HTMLDivElement>(null);
@@ -16,6 +18,7 @@ export default function Scene(props: Props) {
     renderer.setPixelRatio(1); renderer.setClearColor(0x000000, 0); renderer.autoClear = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace; container.appendChild(renderer.domElement);
     const sculpture=createSettingsSculpture();
+    const crt = createCrtShader();
     const world = new THREE.Scene(), overlay = new THREE.Scene();
     world.fog = new THREE.FogExp2(0x111119, .019);
     const camera = new THREE.PerspectiveCamera(48, 1, .1, 160);
@@ -85,13 +88,38 @@ export default function Scene(props: Props) {
       const mat=new THREE.SpriteMaterial({map:texture,blending:THREE.AdditiveBlending,depthWrite:false}); trailMaterials.push(mat);
       const sprite=new THREE.Sprite(mat); overlay.add(sprite); return sprite;
     }));
+    // Render boot lettering into the same picture so curvature affects every pixel.
+    const titleCanvas = document.createElement('canvas');
+    titleCanvas.width = 1024; titleCanvas.height = 128;
+    const titleContext = titleCanvas.getContext('2d')!;
+    const titleTexture = new THREE.CanvasTexture(titleCanvas);
+    titleTexture.colorSpace = THREE.SRGBColorSpace;
+    const titleMaterial = new THREE.MeshBasicMaterial({ map: titleTexture, transparent: true, depthTest: false, depthWrite: false });
+    const titleGeometry = new THREE.PlaneGeometry(1, 1);
+    const title = new THREE.Mesh(titleGeometry, titleMaterial);
+    title.renderOrder = 100; overlay.add(title);
+    let disposed = false;
+    const drawTitle = () => {
+      if (disposed) return;
+      titleContext.clearRect(0, 0, 1024, 128);
+      titleContext.font = '44px "Console UI", Arial, sans-serif';
+      titleContext.textAlign = 'center'; titleContext.textBaseline = 'middle';
+      titleContext.fillStyle = '#ecebf4';
+      titleContext.shadowColor = '#adbbff'; titleContext.shadowBlur = 3;
+      titleContext.fillText('Louis Computer Entertainment', 512, 64);
+      titleTexture.needsUpdate = true;
+    };
+    drawTitle(); void document.fonts.load('44px "Console UI"').then(drawTitle).catch(() => {});
     let width=1,height=1,portrait=false;
     const resize=()=>{
       width=container.clientWidth; height=container.clientHeight; portrait=width/height<.85;
       const resolution=Math.min(1,(width<650?480:720)/width);
       renderer.setSize(Math.round(width*resolution),Math.round(height*resolution),false);
+      crt.resize(Math.round(width*resolution),Math.round(height*resolution));
       camera.aspect=width/height; camera.updateProjectionMatrix();
       fadePlane.scale.x=camera.aspect;
+      const titleWidth = Math.min(camera.aspect * 1.9, 2.8);
+      title.scale.set(titleWidth, titleWidth / 8, 1);
       screenCamera.left=-camera.aspect; screenCamera.right=camera.aspect; screenCamera.updateProjectionMatrix();
     };
     const observer=new ResizeObserver(resize); observer.observe(container); resize();
@@ -109,6 +137,9 @@ export default function Scene(props: Props) {
       wasBoot=p.boot;
       if(!p.reduced)time+=dt;
       const phase=bootFrame(p.elapsed), morph=p.boot?phase.morph:1;
+      const curvature = p.boot && !p.reduced ? 1 - crtZoom(p.elapsed) : 0;
+      title.visible = p.boot; titleMaterial.opacity = phase.title;
+      renderer.setRenderTarget(curvature > 0 ? crt.target : null);
       const menu=p.boot||p.view==='menu', settings=!p.boot&&p.view==='settings';
       settingsAmount=THREE.MathUtils.lerp(settingsAmount,settings?1:0,p.reduced?1:1-Math.exp(-dt*2));
       menuPlay=THREE.MathUtils.lerp(menuPlay,!p.boot&&p.view==='menu'&&!p.reduced?1:0,p.reduced?1:1-Math.exp(-dt*2));
@@ -174,10 +205,12 @@ export default function Scene(props: Props) {
       }
       if(settings&&settingsAmount>.001)sculpture.render(renderer,overlay,screenCamera);
       renderer.clearDepth(); renderer.render(overlay,screenCamera);
+      if (curvature > 0) crt.render(renderer, curvature, time);
     };
     frame=requestAnimationFrame(animate);
     const lost=(event:Event)=>{event.preventDefault();state.current.onFailure();}; renderer.domElement.addEventListener('webglcontextlost',lost);
     return()=>{
+      disposed = true; crt.dispose(); titleTexture.dispose(); titleMaterial.dispose(); titleGeometry.dispose();
       cancelAnimationFrame(frame);observer.disconnect();renderer.domElement.removeEventListener('webglcontextlost',lost);
       sculpture.dispose();fadePlane.geometry.dispose();fadePlane.material.dispose();
       box.dispose();materials.forEach(m=>m.dispose());sprites.forEach(s=>s.material.dispose());cores.forEach(s=>s.material.dispose());trailMaterials.forEach(m=>m.dispose());haze.material.dispose();clouds.forEach(c=>c.material.dispose());cloudTexture.dispose();texture.dispose();renderer.dispose();renderer.domElement.remove();

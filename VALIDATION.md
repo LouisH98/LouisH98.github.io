@@ -50,3 +50,15 @@ Follow-up browser checks at 390×844: all three 3D display canvases render, each
 ## Final shared chrome
 
 Removed the Browser-only gradient and restored the shared console haze/background. Removed its special sound-toggle/footer positioning. Enter, Back, and Options now use fixed footer slots on all screens. Browser and The Screen detail were checked at 1280×720: Back remains at x=210.8, y=632.8 on both. The final type check, lint, ten tests, and production build pass.
+
+## CRT power-on entrance — 5 September 2026
+
+Added a power-gated intro, generated transparent CRT casing, adaptive portrait enclosure, and a continuous screen expansion from 9 to 11.7 seconds. The boot scene and title share a barrel-distortion shader with subtle scanlines, vignette, RGB separation, and grain. The same Three.js scene continues into the fullscreen menu. Reduced motion, skip, and WebGL fallback bypass the zoom; deep links open their destination after power-on.
+
+TypeScript, lint, all 11 Node tests, and the production build pass. New geometry checks cover 1440×900, 390×844, 844×390, 320×568, and 2560×1080: the TV starts inside the viewport, grows monotonically, and its aperture exactly reaches viewport bounds before boot ends. A local HTTP check returns 200 and the preview has been queued in Codex. These are automated geometry/static checks, not browser or physical-device visual verification of the new shader. No publication was requested or performed.
+
+## CRT ignition and raster correction
+
+Added a 1.15-second phosphor ignition before the full intro: centre point, horizontal beam, expanding raster, and a short black settle. Replay includes ignition. The same visibility-aware clock drives both phases; reduced motion bypasses them. Audio unlocks on the original power gesture but cannot start the soundtrack or navigation cues during ignition. Added tests for audio handoff and ignition phases; all 13 tests, type checks, lint, and the production build pass.
+
+Corrected scanline sampling: cosine at half-pixel centres had produced a constant value across raster rows. The shader now samples a sine wave in warped screen coordinates, with stronger scanline contrast, RGB phosphor columns, edge shading, and colour separation. Effects still fade to zero during the zoom. Visual browser review of the revised treatment remains pending.

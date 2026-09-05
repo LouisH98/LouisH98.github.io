@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by the server. The intro runs once per tab session. Sound defaults to a quiet level; if the browser blocks autoplay, it unlocks on the first click or keypress. The speaker icon in the top-right corner toggles sound. **System Configuration → Replay intro** replays it. Direct hash links bypass boot, and reduced-motion preferences skip it. A reload restores the default quiet sound preference; browser autoplay rules still apply.
+Open the local URL printed by the server. The site starts with an off CRT; press its red-lit power button to unlock audio and start a 1.15-second CRT ignition (point → horizontal beam → expanded raster), followed by the full 12-second intro. The startup soundtrack begins after ignition. At 9 seconds, the glass expands toward the viewport, reaching fullscreen by 11.7 seconds. The generated casing and glass effects disappear as the portfolio takes over. The speaker icon toggles sound; **System Configuration → Replay intro** replays the TV entrance. Direct links to portfolio sections still start at the power button but then open the requested section without boot. Reduced-motion preferences skip the intro and zoom after power-on. Reloading returns to the off TV; browser audio rules still apply.
 
 ## Static build and GitHub Pages
 
@@ -41,6 +41,8 @@ The workflow in `.github/workflows/pages.yml` builds and publishes on pushes to 
 - WebGL failure falls back to a static console background and project thumbnails. Content and navigation remain available. A no-JavaScript summary links to all projects.
 - Reduced motion stops the orbs/save icons, skips boot, and shows video posters. Video playback also pauses when outside its scroll viewport or when the tab is hidden.
 - Startup, menu effects, ambient audio, 3D resources, and event listeners are stopped or disposed when appropriate.
+- The boot scene and title share a CRT shader for barrel curvature, edge shading, scanlines, subtle RGB separation, and grain. Distortion fades during the zoom; the fullscreen portfolio remains sharp. Portrait phones use a taller enclosure.
+- CRT timing and viewport geometry live in `lib/console/crt.ts`; the generated transparent casing is `public/textures/crt-casing.png`.
 
 ## Checks
 
@@ -55,4 +57,10 @@ Unit tests cover boot phases, route round trips, missing IDs, root/subpath asset
 
 The scaffold’s vendored UI catalog is excluded from linting. `react/react-compiler` is disabled because this app does not enable React Compiler and synchronizes imperative WebGL/audio references; normal Rules of Hooks and dependency linting remain enabled. Static image elements are intentional: there is no image-optimization server.
 
-See `ASSET_SOURCES.md` for media provenance and the distinction between original recorded assets and the authored 3D recreation.
+## Credits
+
+The original PlayStation 2 interface and its startup and BIOS sound effects were created by **Sony Computer Entertainment**. Credit for those original assets belongs to Sony. PlayStation and PlayStation 2 are Sony trademarks. This is an independent personal portfolio, not affiliated with or endorsed by Sony.
+
+The bundled startup recording and original BIOS menu sounds are sourced from the recordings and archives listed in [ASSET_SOURCES.md](ASSET_SOURCES.md). The ambient audio was sourced from BlacRyu’s PS2 Menu Wallpaper Engine project. Third-party assets retain their respective ownership; this repository does not claim ownership of them or grant a license to reuse them.
+
+The Three.js scenes, animations, project-save models, and portfolio content were created for this site. The Nimbus Sans font retains its own [license](public/font-license.txt). See [ASSET_SOURCES.md](ASSET_SOURCES.md) for detailed sources and credits.

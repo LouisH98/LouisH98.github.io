@@ -57,3 +57,40 @@ test('all project media, including reduced-motion stills, are local and present'
     }
   }
 });
+
+test('CRT zoom preserves the opening and fills the viewport before boot ends', async () => {
+  const { crtZoom, crtLayout, CRT_ZOOM_START, CRT_ZOOM_END } = await import('../lib/console/crt.ts');
+  assert.equal(crtZoom(0), 0);
+  assert.equal(crtZoom(CRT_ZOOM_START), 0);
+  assert.equal(crtZoom(CRT_ZOOM_END), 1);
+  assert.ok(CRT_ZOOM_END < BOOT_DURATION);
+  for (const [width, height] of [[1440,900],[390,844],[844,390],[320,568],[2560,1080]]) {
+    const initial = crtLayout(width, height, 0);
+    assert.ok(initial.left >= 0 && initial.top >= 0);
+    assert.ok(initial.width <= width && initial.height <= height);
+    const full = crtLayout(width, height, 1);
+    assert.ok(Math.abs(full.left + full.width * .08) < .001);
+    assert.ok(Math.abs(full.top + full.height * .095) < .001);
+    assert.ok(Math.abs(full.width * .84 - width) < .001);
+    assert.ok(Math.abs(full.height * .70 - height) < .001);
+    let previous = initial;
+    for (let t = CRT_ZOOM_START; t <= BOOT_DURATION; t += .05) {
+      const current = crtLayout(width, height, crtZoom(t));
+      assert.ok(current.width >= previous.width && current.height >= previous.height);
+      previous = current;
+    }
+  }
+});
+
+test('CRT ignition opens a horizontal beam before expanding and settling to black', async () => {
+  const { crtPowerFrame, CRT_POWER_DURATION } = await import('../lib/console/crt.ts');
+  assert.equal(crtPowerFrame(0).opacity, 0);
+  const line = crtPowerFrame(.42);
+  assert.equal(line.width, 1);
+  assert.equal(line.height, .004);
+  assert.equal(line.opacity, 1);
+  const opening = crtPowerFrame(.65);
+  assert.ok(opening.height > line.height && opening.height < 1);
+  assert.equal(crtPowerFrame(CRT_POWER_DURATION).opacity, 0);
+  assert.equal(crtPowerFrame(CRT_POWER_DURATION).height, 1);
+});

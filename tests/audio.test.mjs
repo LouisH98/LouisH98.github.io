@@ -71,3 +71,16 @@ test('muting during unlock prevents delayed playback',async()=>{
   const enabling=s.controller.enable();s.controller.disable();resume();
   assert.equal(await enabling,false);assert.equal(s.sources.length,0);s.controller.dispose();
 });
+
+test('CRT ignition unlocks audio silently, then starts boot at the timeline handoff', async()=>{
+  const s=setup();
+  s.setFrame({boot:true,elapsed:-1.15});
+  assert.equal(await s.controller.enable(),true);
+  s.controller.cue('move');
+  assert.equal(s.sources.length,0);
+  s.setFrame({boot:true,elapsed:0});s.controller.sync(true);
+  assert.deepEqual(s.calls.at(-1),{offset:0,loop:false});
+  s.setFrame({boot:true,elapsed:-1.15});s.controller.sync(true);
+  assert.equal(s.calls.at(-1),'stop');
+  s.controller.dispose();
+});
