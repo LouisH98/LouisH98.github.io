@@ -21,3 +21,34 @@ export function particleSlot(index:number,seconds:number,radius:number){
   const angle=index*Math.PI/4+seconds*.35;
   return {x:Math.cos(angle)*radius,y:Math.sin(angle)*radius,depth:Math.sin(angle)*.2};
 }
+
+export type FlightPoint={x:number;y:number};
+export type ParticleJoin={start:FlightPoint;velocity:FlightPoint;slot:number;startTime:number;endTime:number;radius:number};
+
+/** Assign slots in angular order, minimizing travel from momentum-projected positions. */
+export function assignParticleSlots(points:FlightPoint[],velocities:FlightPoint[],endTime:number,radius:number){
+  const predicted=points.map((p,i)=>({x:p.x+velocities[i].x*.7,y:p.y+velocities[i].y*.7}));
+  const order=predicted.map((p,i)=>({i,angle:Math.atan2(p.y,p.x)})).sort((a,b)=>a.angle-b.angle);
+  const slots=points.map((_,i)=>{const p=particleSlot(i,endTime,radius);return {i,angle:Math.atan2(p.y,p.x)};}).sort((a,b)=>a.angle-b.angle);
+  let best=Infinity,result:number[]=[];
+  for(let shift=0;shift<points.length;shift++){
+    const candidate:number[]=[];let cost=0;
+    order.forEach((p,k)=>{const slot=slots[(k+shift)%slots.length].i,target=particleSlot(slot,endTime,radius);
+      candidate[p.i]=slot;cost+=(predicted[p.i].x-target.x)**2+(predicted[p.i].y-target.y)**2;
+    });
+    if(cost<best){best=cost;result=candidate;}
+  }
+  return result;
+}
+
+/** One fixed Hermite flight arrives with exactly the orbit's tangential velocity. */
+export function joinedParticle(join:ParticleJoin,seconds:number):FlightPoint{
+  if(seconds>=join.endTime)return particleSlot(join.slot,seconds,join.radius);
+  const duration=join.endTime-join.startTime;
+  const t=Math.max(0,(seconds-join.startTime)/duration),t2=t*t,t3=t2*t;
+  const end=particleSlot(join.slot,join.endTime,join.radius);
+  const endVelocity={x:-end.y*.35,y:end.x*.35};
+  const axis=(key:'x'|'y')=>(2*t3-3*t2+1)*join.start[key]+(t3-2*t2+t)*duration*join.velocity[key]
+    +(-2*t3+3*t2)*end[key]+(t3-t2)*duration*endVelocity[key];
+  return {x:axis('x'),y:axis('y')};
+}

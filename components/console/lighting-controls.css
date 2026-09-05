@@ -24,3 +24,7 @@
 .layout-dev button { flex:1; min-height:36px; background:#27303d; border-radius:5px; }
 .layout-dev textarea { margin-top:8px; height:140px; }
 .layout-dev-surface { position:fixed; inset:0; z-index:40; touch-action:none; cursor:grab; }
+
+/* Preserve saved local settings/layout while keeping the presentation clean. */
+html[data-dev-controls="hidden"] [data-dev-controls],
+html[data-dev-controls="hidden"] .layout-dev-surface { display:none !important; }

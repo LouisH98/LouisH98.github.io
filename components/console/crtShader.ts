@@ -36,7 +36,8 @@ export function createCrtShader(renderer: THREE.WebGLRenderer) {
         float edge = 1.0 - amount * 0.42 * pow(clamp(length(point) * 0.72, 0.0, 1.0), 2.5);
         // Sine alternates at half-pixel centres; cosine was constant there.
         // Sample the warped UV so horizontal raster lines bend with the glass.
-        float scanline = 1.0 - amount * 0.38 * (0.5 + 0.5 * sin(uv.y * rasterSize.y * 3.14159265));
+        // Wider, deeper phosphor gaps stay legible on the physical CRT.
+        float scanline = 1.0 - amount * 0.48 * (0.5 + 0.5 * sin(uv.y * rasterSize.y * 3.14159265));
         float column = mod(floor(uv.x * rasterSize.x), 3.0);
         vec3 phosphor = column < 1.0 ? vec3(1.0, 0.78, 0.78) : column < 2.0 ? vec3(0.78, 1.0, 0.78) : vec3(0.78, 0.78, 1.0);
         float grain = fract(sin(dot(gl_FragCoord.xy + floor(time * 12.0), vec2(12.9898, 78.233))) * 43758.5453);
@@ -61,7 +62,7 @@ export function createCrtShader(renderer: THREE.WebGLRenderer) {
     render(renderer: THREE.WebGLRenderer, amount: number, time: number, destination: THREE.WebGLRenderTarget | null = null, powerTime: number | null = null) {
       material.uniforms.amount.value = amount; material.uniforms.time.value = time;
       // Keep raster structure visible when this texture is viewed on a smaller 3D screen.
-      material.uniforms.rasterSize.value.set(destination ? Math.min(target.width,640) : target.width, destination ? Math.min(target.height,360) : target.height);
+      material.uniforms.rasterSize.value.set(destination ? Math.min(target.width,640) : target.width, destination ? Math.min(target.height,240) : target.height);
       material.uniforms.warming.value = powerTime !== null;
       if (powerTime !== null) {
         const ignition=crtPowerFrame(powerTime);

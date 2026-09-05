@@ -24,3 +24,19 @@ test('eight evenly spaced slots continue past boot without changing paths',()=>{
   assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.0002);
  }
 });
+
+test('joining paths preserve incoming velocity and match the rotating ring on arrival',async()=>{
+ const {joinedParticle,assignParticleSlots}=await import('../lib/console/particleMotion.ts');
+ const points=Array.from({length:8},(_,i)=>cityParticle(i,9,1.3));
+ const velocities=points.map(()=>({x:.2,y:-.15}));
+ const slots=assignParticleSlots(points,velocities,12,.31);
+ assert.equal(new Set(slots).size,8);
+ for(let i=0;i<8;i++){
+  const join={start:points[i],velocity:velocities[i],slot:slots[i],startTime:9,endTime:12,radius:.31};
+  const h=1e-5,start=joinedParticle(join,9),after=joinedParticle(join,9+h);
+  assert.ok(Math.hypot((after.x-start.x)/h-.2,(after.y-start.y)/h+.15)<1e-4);
+  const end=joinedParticle(join,12),before=joinedParticle(join,12-h),next=joinedParticle(join,12+h);
+  assert.deepEqual(end,particleSlot(slots[i],12,.31));
+  assert.ok(Math.hypot((end.x-before.x)/h-(next.x-end.x)/h,(end.y-before.y)/h-(next.y-end.y)/h)<1e-4);
+ }
+});

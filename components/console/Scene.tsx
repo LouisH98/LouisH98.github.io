@@ -3,7 +3,7 @@ import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import { createIntroProfiler } from './introProfiler';
 import { createSettingsSculpture } from './settingsSculpture';
-import { cityParticle, incomingParticle, particleSlot } from '@/lib/console/particleMotion';
+import { assignParticleSlots, cityParticle, incomingParticle, joinedParticle, particleSlot, type ParticleJoin } from '@/lib/console/particleMotion';
 import { bootFrame, smooth } from '@/lib/console/timeline';
 import { crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
 import { subscribeLighting } from '@/lib/console/lighting';
@@ -159,6 +159,8 @@ export default function Scene(props: Props) {
     let backgroundAlpha=state.current.boot?1:0;
     const center=new THREE.Vector2(), target=new THREE.Vector2(); let radius=.28;
     const blue=new THREE.Color(0x398fff);
+    let joins:ParticleJoin[]=[];
+    const previousCenter=new THREE.Vector2();
     let lastRoomFrame=0;
     const animate=(now:number)=>{
       frame=requestAnimationFrame(animate);
@@ -176,7 +178,7 @@ export default function Scene(props: Props) {
       screenCamera.left=-sourceAspect;screenCamera.right=sourceAspect;screenCamera.updateProjectionMatrix();
       fadePlane.scale.x=sourceAspect;
       const textWidth=Math.min(sourceAspect*1.9,2.8);title.scale.set(textWidth,textWidth/8,1);
-      if(p.reduced||(p.boot&&!wasBoot))histories.forEach(h=>{h.length=0;});
+      if(p.reduced||(p.boot&&!wasBoot)){histories.forEach(h=>{h.length=0;});joins=[];}
       wasBoot=p.boot;
       if(!p.reduced)time=p.boot?Math.max(0,p.elapsed):time+dt;
       const pictureTime=Math.max(0,p.elapsed);
@@ -204,17 +206,30 @@ export default function Scene(props: Props) {
       if(settings&&settingsAmount>.001)sculpture.update(time,camera.aspect,portrait,settingsAmount,p.settingIndex??0,p.reduced);
       haze.material.opacity=p.boot?.25*phase.field:.045;
       clouds.forEach((cloud,i)=>{cloud.material.opacity=p.boot?.32*phase.field:0;cloud.material.rotation=time*.018*(i%2?1:-1);cloud.position.set(Math.sin(time*.15+i)*.13,Math.cos(time*.13+i)*.07,0);});
+      if(p.boot&&morph>0&&!joins.length){
+        const flights=Array.from({length:8},(_,i)=>{
+          const flight=i%2?incomingParticle:cityParticle,parent=Math.floor(i/2);
+          const position=flight(parent,pictureTime,sourceAspect);
+          const before=flight(parent,pictureTime-.001,sourceAspect);
+          return {start:{x:position.x-center.x,y:position.y-center.y},
+            velocity:{x:(position.x-before.x)/.001-(center.x-previousCenter.x)/Math.max(dt,.001),
+              y:(position.y-before.y)/.001-(center.y-previousCenter.y)/Math.max(dt,.001)}};
+        });
+        const slots=assignParticleSlots(flights.map(f=>f.start),flights.map(f=>f.velocity),12,radius);
+        joins=flights.map((f,i)=>({...f,slot:slots[i],startTime:pictureTime,endTime:12,radius}));
+      }
       for(let i=0;i<8;i++){
         // Four existing lights keep their identities; four enter from beyond
         // the screen edges into the alternating vacant ring slots.
         const parent=Math.floor(i/2);
         const newcomer=i%2===1;
-        const arrival=newcomer?smooth((morph-parent*.055)/(1-parent*.055)):morph;
-        const slot=particleSlot(i,time,radius);
+        const slot=particleSlot(joins[i]?.slot??i,time,radius);
         const depth=slot.depth;
         const ring={x:center.x+slot.x,y:center.y+slot.y};
         const start=newcomer?incomingParticle(parent,pictureTime,sourceAspect):cityParticle(parent,pictureTime,sourceAspect);
-        const sprite=sprites[i]; sprite.position.set(THREE.MathUtils.lerp(start.x,ring.x,arrival),THREE.MathUtils.lerp(start.y,ring.y,arrival),0);
+        const flight=joins[i]?joinedParticle(joins[i],time):null;
+        const position=flight?{x:center.x+flight.x*radius/joins[i].radius,y:center.y+flight.y*radius/joins[i].radius}:p.boot?start:ring;
+        const sprite=sprites[i]; sprite.position.set(position.x,position.y,0);
         sprite.material.color.setHex(colors[parent]).lerp(blue,smooth((morph-.35)/.65));
         sprite.material.opacity=1+depth*.18*morph;
         const size=THREE.MathUtils.lerp(.058,radius*(.46+depth*.09),smooth((morph-.2)/.8));
@@ -239,6 +254,7 @@ export default function Scene(props: Props) {
           trail.scale.setScalar(THREE.MathUtils.lerp(before.size,after.size,mix)*(.65-j*.035));
         });
       }
+      previousCenter.copy(center);
       if(settings&&settingsAmount>.001)sculpture.render(renderer,overlay,screenCamera);
       renderer.clearDepth(); renderer.render(overlay,screenCamera);
       if (roomActive) {
