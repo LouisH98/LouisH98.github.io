@@ -55,4 +55,10 @@ Unit tests cover boot phases, route round trips, missing IDs, root/subpath asset
 
 The scaffold’s vendored UI catalog is excluded from linting. `react/react-compiler` is disabled because this app does not enable React Compiler and synchronizes imperative WebGL/audio references; normal Rules of Hooks and dependency linting remain enabled. Static image elements are intentional: there is no image-optimization server.
 
-See `ASSET_SOURCES.md` for media provenance and the distinction between original recorded assets and the authored 3D recreation.
+## Credits
+
+The original PlayStation 2 interface and its startup and BIOS sound effects were created by **Sony Computer Entertainment**. Credit for those original assets belongs to Sony. PlayStation and PlayStation 2 are Sony trademarks. This is an independent personal portfolio, not affiliated with or endorsed by Sony.
+
+The bundled startup recording and original BIOS menu sounds are sourced from the recordings and archives listed in [ASSET_SOURCES.md](ASSET_SOURCES.md). The ambient audio was sourced from BlacRyu’s PS2 Menu Wallpaper Engine project. Third-party assets retain their respective ownership; this repository does not claim ownership of them or grant a license to reuse them.
+
+The Three.js scenes, animations, project-save models, and portfolio content were created for this site. The Nimbus Sans font retains its own [license](public/font-license.txt). See [ASSET_SOURCES.md](ASSET_SOURCES.md) for detailed sources and credits.
