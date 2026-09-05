@@ -22,7 +22,7 @@ export default function CrtEntrance({ fallback, powerButton, children, powered, 
   const style = { ...(size ? crtLayout(size.width, size.height, progress) : {}), '--crt-presence': 1 - progress, '--crt-casing-opacity': 1 - smooth((progress - .65) / .35) } as CSSProperties;
   if (!fallback) return <div ref={stage} className="bedroom-stage" data-powered={powered}>
     {children}
-    <button ref={powerButton} className="bedroom-power" onClick={onPower} disabled={!ready} tabIndex={powered ? -1 : 0} aria-hidden={powered} aria-label="Power on CRT monitor" title="Power on"><span className="bedroom-power-glow" aria-hidden="true"/><span className="bedroom-power-label">Power on</span><span className="bedroom-power-mobile" aria-hidden="true"><span className="ps2-reset">RESET<span>POWER ON</span></span><span className="ps2-power-symbol">I / <Power size={26} strokeWidth={2.3}/><span className="ps2-standby-led"/></span></span></button>
+    <button ref={powerButton} className="bedroom-power" onClick={onPower} disabled={!ready} tabIndex={powered ? -1 : 0} aria-hidden={powered} aria-label="Power on CRT monitor" title="Power on"><span className="bedroom-power-label" aria-hidden="true"><Power size={16} strokeWidth={2}/></span><span className="bedroom-power-mobile" aria-hidden="true"><span className="ps2-reset">RESET<span><Power size={14} strokeWidth={2}/></span></span><span className="ps2-power-symbol">I / <Power size={26} strokeWidth={2.3}/><span className="ps2-standby-led"/></span></span></button>
   </div>;
   return <div ref={stage} className="crt-stage" data-power={powered ? 'on' : 'off'} data-fullscreen={full} data-warming={ignition !== null}>
     <div className="crt-set" style={style}>

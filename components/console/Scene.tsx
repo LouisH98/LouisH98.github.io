@@ -167,6 +167,8 @@ export default function Scene(props: Props) {
       const dt=Math.min((now-previous)/1000,.05); previous=now; if(document.hidden)return;
       const p={...state.current,elapsed:state.current.clock?.current.elapsed??state.current.elapsed};
       bedroom.setEditingAvailable(p.powered===false);
+      bedroom.setPowerHovered(!p.powered&&Boolean(p.powerButton?.current?.matches(':hover, :focus-visible')));
+      if(bedroom.powerLightAnimating())roomDirty=true;
       if (p.powered === false && !roomDirty && (p.reduced || now-lastRoomFrame<1000/24)) return;
       profiler?.begin(!p.powered?'standby':!p.boot?'menu':p.elapsed<1.15?'ignition':p.elapsed<9?'intro':'zoom',now);
       lastRoomFrame=now;
@@ -259,7 +261,7 @@ export default function Scene(props: Props) {
       renderer.clearDepth(); renderer.render(overlay,screenCamera);
       if (roomActive) {
         crt.render(renderer,curvature,time,televisionPicture,powerTime);
-        const anchor=bedroom.render(televisionPicture.texture,width,height,roomProgress,Boolean(p.powered),powerTime,p.reduced?0:now/1000);
+        const anchor=bedroom.render(televisionPicture.texture,width,height,roomProgress,Boolean(p.powered),p.reduced?0:now/1000);
         const button=p.powerButton?.current;
         if(button){button.style.left=`${anchor.x}px`;button.style.top=`${anchor.y}px`;button.style.width=`${anchor.size}px`;button.style.height=`${anchor.size}px`;}
         roomDirty=false;

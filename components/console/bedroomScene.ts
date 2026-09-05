@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { crtPowerFrame } from '@/lib/console/crt';
+import { createScreenLightSampler } from './screenLightSampler';
 import { LAYOUT_DEFAULTS } from '@/lib/console/layout';
 import type { LayoutItem } from './layoutEditor';
 import { configureGlassReflection } from './glassReflection';
@@ -85,6 +85,15 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
   const poster=new THREE.Mesh(new THREE.PlaneGeometry(1.8,2.7),posterMaterial);
   poster.position.set(4.05,1.8,-5.828);poster.receiveShadow=true;room.add(poster);
   endItem('Poster',true);
+  // Presentation offset is separate from saved prop coordinates.
+  const posterPlacement=new THREE.Group();room.add(posterPlacement);
+  layoutItems.find(item=>item.name==='Poster')!.objects.forEach(object=>posterPlacement.add(object));
+  const placePoster=(width:number,height:number)=>{
+    const x=width<=700&&height>width?-3.9:0;
+    if(posterPlacement.position.x===x)return;
+    posterPlacement.position.x=x;room.updateMatrixWorld(true);renderer.shadowMap.needsUpdate=true;
+  };
+  placePoster(window.innerWidth,window.innerHeight);
   // Desk, legs, console and a cable disappearing behind the monitor.
   box(7.4,.22,3.3,-.45,-1.66,.1,wood,.055);
   box(7.25,.018,3.2,-.45,-1.54,.1,wood,.01);
@@ -193,7 +202,8 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
   // The physical power key has a red standby LED and a DOM hit target projected onto it.
   const powerPosition=new THREE.Vector3(1.4,-1.18,.68);
   const powerKey=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,.035,32),metal);powerKey.rotation.x=Math.PI/2;powerKey.position.copy(powerPosition);room.add(powerKey);
-  const ledMaterial=new THREE.MeshBasicMaterial({color:'#ff3b24'});materials.push(ledMaterial);
+  let powerHovered=false,ledStrength=1,ledFrom=1,ledTo=1,ledTransitionStart=0;
+  const ledMaterial=new THREE.MeshStandardMaterial({color:'#000000',emissive:'#ff3b24',emissiveIntensity:1,roughness:.4});materials.push(ledMaterial);
   const led=new THREE.Mesh(new THREE.SphereGeometry(.029,16,12),ledMaterial);led.position.set(1.4,-1.18,.715);room.add(led);
   const standby=new THREE.PointLight('#ff3925',.085,.7,2);standby.position.set(1.4,-1.18,.82);room.add(standby);
   const lampColor='#ffb66d', lampBounceColor='#cf976a';
@@ -225,6 +235,7 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
   // Screen spill emits toward the desk/viewer, never back into its own glass.
   // A point source here produces a persistent specular dot at the screen centre.
   RectAreaLightUniformsLib.init();
+  const screenLightSampler=createScreenLightSampler(renderer);
   const screenLight=new THREE.RectAreaLight('#709eff',0,2.9,2.15);
   screenLight.position.set(0,.1,1.1);screenLight.rotation.y=Math.PI;room.add(screenLight);
   beginItem();
@@ -362,10 +373,13 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
   const anchor=new THREE.Vector3(),edge=new THREE.Vector3();
   const target=new THREE.Vector3(0,.11,.72);
   return {
+    powerLightAnimating(){return performance.now()-ledTransitionStart<100;},
+    setPowerHovered(value:boolean){if(powerHovered!==value){powerHovered=value;ledFrom=ledStrength;ledTo=value?2:1;ledTransitionStart=performance.now();invalidate();}},
     setEditingAvailable(value:boolean){editor?.setAvailable(value);},
-    render(picture:THREE.Texture, width:number,height:number,progress:number,powered:boolean,ignition:number|null,time=0) {
+    render(picture:THREE.Texture, width:number,height:number,progress:number,powered:boolean,time=0) {
       dustMaterial.uniforms.time.value=time;
       dustMaterial.uniforms.pixelRatio.value=renderer.getDrawingBufferSize(new THREE.Vector2()).y/height;
+      placePoster(width,height);
       applyLighting();
       if(reflectionRevision!==getReflectionRevision()){captureReflection();reflectionRevision=getReflectionRevision();}
       camera.aspect=width/height;
@@ -392,15 +406,18 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
       screenMaterial.emissiveMap=picture;
       screenMaterial.emissiveIntensity=powered?getLighting().screen:0;
       screenMaterial.color.set(powered?'#000000':'#080e13');
-      ledMaterial.color.set(powered?'#9ee863':'#ff3b24');standby.color.copy(ledMaterial.color);
-      const powerFrame=ignition===null?null:crtPowerFrame(ignition);
-      screenLight.intensity=powered?1.3*(powerFrame?powerFrame.width*powerFrame.height*powerFrame.opacity:1):0;
+      ledMaterial.emissive.set(powered?'#9ee863':'#ff3b24');
+      const ledProgress=Math.min(1,(performance.now()-ledTransitionStart)/100);
+      ledStrength=powered?1:THREE.MathUtils.lerp(ledFrom,ledTo,ledProgress*ledProgress*(3-2*ledProgress));
+      ledMaterial.emissiveIntensity=ledStrength;
+      standby.color.copy(ledMaterial.emissive);standby.intensity=.085*ledStrength;
+      screenLightSampler.update(picture,screenLight,powered,getLighting().screen);
       renderer.setRenderTarget(null);renderer.setClearColor('#090d15',1);atmosphere.render(renderer,room,camera,taskLight);
       anchor.copy(powerPosition).project(camera);edge.copy(powerPosition).add(new THREE.Vector3(.11,0,0)).project(camera);
       return { x:(anchor.x+1)*width/2,y:(1-anchor.y)*height/2,size:Math.max(44,Math.abs(edge.x-anchor.x)*width) };
     },
     dispose() {
-      disposed=true;editor?.dispose();posterTexture.dispose();
+      disposed=true;screenLightSampler.dispose();editor?.dispose();posterTexture.dispose();
       const geometries=new Set<THREE.BufferGeometry>();room.traverse(o=>{if(o instanceof THREE.Mesh)geometries.add(o.geometry);});
       geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());dustGeometry.dispose();grain.dispose();woodGrain.dispose();consoleLogo.dispose();environment?.dispose();reflectionTarget.dispose();
       atmosphere.dispose();lamp.dispose();moon.dispose();taskLight.dispose();

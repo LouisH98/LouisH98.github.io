@@ -278,8 +278,8 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .bedroom-stage .console[data-powered="false"] > :not(.scene):not(.sr-only) { visibility:hidden; }
 .bedroom-stage .console[data-room="true"] .screen-haze { visibility:hidden; }
 .bedroom-power { position:absolute; left:65%; top:65%; width:44px; height:44px; transform:translate(-50%,-50%); z-index:20; border-radius:50%; background:transparent; }
-.bedroom-power:enabled:hover { box-shadow:0 0 20px #e761382b; }
-.bedroom-power:focus-visible { outline:2px solid #f0c497; outline-offset:2px; box-shadow:0 0 18px #ffb26d45; }
+
+.bedroom-power:focus-visible { outline:2px solid #f0c497; outline-offset:2px; }
 .bedroom-stage .console[data-room="true"] .console-top { top:auto; bottom:30px; right:30px; left:auto; }
 .bedroom-stage .console[data-room="true"] .boot-bottom { bottom:30px; left:30px; right:auto; }
 .bedroom-stage .console[data-room="true"] .scene { filter:none; opacity:1; }
@@ -288,7 +288,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .bedroom-power { cursor:pointer; }
 .bedroom-power-glow { position:absolute; inset:28%; border-radius:50%; background:radial-gradient(circle,#ffba8d 0%,#ff493e80 24%,#ff392500 72%); box-shadow:0 0 15px 4px #ff39254a; pointer-events:none; animation:standby-breathe 2.8s ease-in-out infinite; }
 .bedroom-power-label { position:absolute; top:100%; left:50%; transform:translateX(-50%); white-space:nowrap; font:500 10px/1.4 sans-serif; letter-spacing:.13em; text-transform:uppercase; color:#e7c7b7; text-shadow:0 1px 5px #000; }
-.bedroom-power:enabled:hover .bedroom-power-label,.bedroom-power:focus-visible .bedroom-power-label { color:#fff; }
+
 .bedroom-power:disabled { visibility:hidden; }
 @keyframes standby-breathe { 0%,100% { opacity:.45; transform:scale(.85); } 50% { opacity:1; transform:scale(1.25); } }
 @media (prefers-reduced-motion:reduce) { .bedroom-power-glow { animation:none; opacity:.75; } }
@@ -328,4 +328,10 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 }
 @media (prefers-reduced-motion:reduce) {
   .bedroom-power { transition:none; }
+}
+
+/* Keep noise at its native tile scale; omit it behind the mobile main menu. */
+.screen-haze:after { background-size:150px 150px; }
+@media (max-width:700px) {
+  .view-menu .screen-haze:after { display:none; }
 }
