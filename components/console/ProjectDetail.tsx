@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { asset } from '@/lib/console/assets';
 import type { Project } from '@/lib/console/content';
 import BitmapText from './BitmapText';
+import { ArrowUpRight } from 'lucide-react';
 function Media({ src, alt, reduced }: { src: string; alt: string; reduced: boolean }) {
   const [failed, setFailed] = useState(false), [play, setPlay] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
@@ -35,7 +36,7 @@ export default function ProjectDetail({ project, reduced }: { project: Project; 
       <h1 tabIndex={-1} data-screen-heading><BitmapText>{project.title}</BitmapText></h1>
       <p className="project-summary">{project.summary}</p>
       <div className="technology-list">{project.technologies.map(t=><span key={t}>{t}</span>)}</div>
-      <a className="launch-link" href={project.url} target="_blank" rel="noreferrer">{project.linkLabel}<span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+      <a className="launch-link" href={project.url} target="_blank" rel="noreferrer">{project.linkLabel}<ArrowUpRight className="action-icon" aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span></a>
     </div>
     <Media src={project.image} alt={`${project.title} in action`} reduced={reduced} />
     <div className="project-story">{project.sections.map(section=><section key={section.title}>
@@ -43,6 +44,6 @@ export default function ProjectDetail({ project, reduced }: { project: Project; 
       {section.bullets && <ul>{section.bullets.map(b=><li key={b}>{b}</li>)}</ul>}
       {section.image && <Media src={section.image} alt={section.caption || section.title} reduced={reduced} />}
     </section>)}</div>
-    <a className="launch-link bottom-launch" href={project.url} target="_blank" rel="noreferrer">{project.linkLabel}<span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+    <a className="launch-link bottom-launch" href={project.url} target="_blank" rel="noreferrer">{project.linkLabel}<ArrowUpRight className="action-icon" aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span></a>
   </article>;
 }

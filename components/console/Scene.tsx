@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { createSettingsSculpture } from './settingsSculpture';
 import { bootFrame, smooth } from '@/lib/console/timeline';
-type Props = { boot: boolean; elapsed: number; reduced: boolean; view: string; onFailure: () => void };
+type Props = { settingIndex?:number; boot: boolean; elapsed: number; reduced: boolean; view: string; onFailure: () => void };
 export default function Scene(props: Props) {
   const host = useRef<HTMLDivElement>(null);
   const state = useRef(props); state.current = props;
@@ -11,8 +12,10 @@ export default function Scene(props: Props) {
     let renderer: THREE.WebGLRenderer;
     try { renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'high-performance' }); }
     catch { state.current.onFailure(); return; }
+    renderer.transmissionResolutionScale=.65;
     renderer.setPixelRatio(1); renderer.setClearColor(0x000000, 0); renderer.autoClear = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace; container.appendChild(renderer.domElement);
+    const sculpture=createSettingsSculpture();
     const world = new THREE.Scene(), overlay = new THREE.Scene();
     world.fog = new THREE.FogExp2(0x111119, .019);
     const camera = new THREE.PerspectiveCamera(48, 1, .1, 160);
@@ -98,6 +101,7 @@ export default function Scene(props: Props) {
     };
     const observer=new ResizeObserver(resize); observer.observe(container); resize();
     let frame=0,time=0,previous=0,initialized=false;
+    let settingsAmount=0, menuPlay=0, menuChaseAngle=0;
     let backgroundAlpha=state.current.boot?1:0;
     const center=new THREE.Vector2(), target=new THREE.Vector2(); let radius=.28;
     const blue=new THREE.Color(0x398fff);
@@ -110,9 +114,11 @@ export default function Scene(props: Props) {
       wasBoot=p.boot;
       if(!p.reduced)time+=dt;
       const phase=bootFrame(p.elapsed), morph=p.boot?phase.morph:1;
-      const menu=p.boot||p.view==='menu';
-      target.set(menu?(portrait?0:-camera.aspect*.41):0,menu?(portrait?.38:.02):0);
-      const targetRadius=menu?(portrait?.245:.31):(portrait?.42:.48);
+      const menu=p.boot||p.view==='menu', settings=!p.boot&&p.view==='settings';
+      settingsAmount=THREE.MathUtils.lerp(settingsAmount,settings?1:0,p.reduced?1:1-Math.exp(-dt*2));
+      menuPlay=THREE.MathUtils.lerp(menuPlay,!p.boot&&p.view==='menu'&&!p.reduced?1:0,p.reduced?1:1-Math.exp(-dt*2));
+      target.set(settings?(portrait?0:-camera.aspect*.21):menu?(portrait?0:-camera.aspect*.41):0,settings?(portrait?.3:0):menu?(portrait?.38:.02):0);
+      const targetRadius=settings?.25:menu?(portrait?.245:.31):(portrait?.42:.48);
       const blend=p.reduced||!initialized?1:1-Math.exp(-dt*4.5);
       center.lerp(target,blend); radius=THREE.MathUtils.lerp(radius,targetRadius,blend); initialized=true;
       // Black belongs to the tower pass, so it never covers the orb/trail overlay.
@@ -126,12 +132,23 @@ export default function Scene(props: Props) {
         fadePlane.material.opacity=1-phase.field;
         renderer.render(fadeScene,screenCamera);
       }
+      if(settings&&settingsAmount>.001)sculpture.update(time,camera.aspect,portrait,settingsAmount,p.settingIndex??0,p.reduced);
       haze.material.opacity=p.boot?.25*phase.field:.045;
       clouds.forEach((cloud,i)=>{cloud.material.opacity=p.boot?.32*phase.field:0;cloud.material.rotation=time*.018*(i%2?1:-1);cloud.position.set(Math.sin(time*.15+i)*.13,Math.cos(time*.13+i)*.07,0);});
+      // A single ordered queue on a shared orbit. Equal positive angular gaps
+      // contract and expand together, so lights never cross or overtake.
+      if(!p.reduced)menuChaseAngle+=dt*.3*menuPlay;
+      const cycle=time%22;
+      const gather=menuPlay*(cycle<5?0:cycle<10?smooth((cycle-5)/5):cycle<13?1:cycle<18?1-smooth((cycle-13)/5):0);
       for(let i=0;i<8;i++){
-        const theta=i/8*Math.PI*2+time*.55+Math.sin(time*.61+i*.9)*.17;
-        const r=radius*(1+Math.sin(time*.34)*.12+Math.sin(time*.47+i*1.3)*.075);
-        const tilt=.45+Math.sin(time*.37)*.95, roll=Math.sin(time*.23)*.5+time*.06;
+        const phaseAngle=i/8*Math.PI*2;
+        const theta=phaseAngle+time*.55+menuChaseAngle
+          +(3.5-i)*(Math.PI/4-.23)*gather
+          +Math.sin(time*.61+i*.9)*.17*(1-menuPlay);
+        const r=radius*(1+Math.sin(time*.34)*(.12-.06*menuPlay)
+          +Math.sin(time*.47+i*1.3)*.075*(1-menuPlay));
+        const tilt=THREE.MathUtils.lerp(.45+Math.sin(time*.37)*.95,.35+Math.sin(time*.17)*.4,menuPlay);
+        const roll=Math.sin(time*.23)*.5+time*.06;
         const x=Math.cos(theta)*r, y=Math.sin(theta)*r*Math.cos(tilt), depth=Math.sin(theta)*Math.sin(tilt);
         const ring=new THREE.Vector2(center.x+x*Math.cos(roll)-y*Math.sin(roll),center.y+x*Math.sin(roll)+y*Math.cos(roll));
         const start=orbit(i%4,p.elapsed);
@@ -160,13 +177,14 @@ export default function Scene(props: Props) {
           trail.scale.setScalar(THREE.MathUtils.lerp(before.size,after.size,mix)*(.65-j*.035));
         });
       }
+      if(settings&&settingsAmount>.001)sculpture.render(renderer,overlay,screenCamera);
       renderer.clearDepth(); renderer.render(overlay,screenCamera);
     };
     frame=requestAnimationFrame(animate);
     const lost=(event:Event)=>{event.preventDefault();state.current.onFailure();}; renderer.domElement.addEventListener('webglcontextlost',lost);
     return()=>{
       cancelAnimationFrame(frame);observer.disconnect();renderer.domElement.removeEventListener('webglcontextlost',lost);
-      fadePlane.geometry.dispose();fadePlane.material.dispose();
+      sculpture.dispose();fadePlane.geometry.dispose();fadePlane.material.dispose();
       box.dispose();materials.forEach(m=>m.dispose());sprites.forEach(s=>s.material.dispose());cores.forEach(s=>s.material.dispose());trailMaterials.forEach(m=>m.dispose());haze.material.dispose();clouds.forEach(c=>c.material.dispose());cloudTexture.dispose();texture.dispose();renderer.dispose();renderer.domElement.remove();
     };
   }, []);

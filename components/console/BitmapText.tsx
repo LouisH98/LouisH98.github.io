@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 /** Low-resolution visual text backed by a semantic accessible label. */
-export default function BitmapText({ children, className = '', color = '#fff' }: { children: string; className?: string; color?: string }) {
+export default function BitmapText({ children, className = '', color = '#fff', centered = false }: { children: string; className?: string; color?: string; centered?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const [width, setWidth] = useState<number>();
+  const [dimensions, setDimensions] = useState<{width:number;height:number}>();
   useEffect(() => {
     const canvas = ref.current;
     const ctx = canvas?.getContext('2d');
@@ -24,13 +24,24 @@ export default function BitmapText({ children, className = '', color = '#fff' }:
     const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
     for (let i = 3; i < pixels.data.length; i += 4) pixels.data[i] = Math.round(pixels.data[i] / 51) * 51;
     ctx.putImageData(pixels, 0, 0);
-    setWidth(canvas.width / size);
+    if (centered) {
+      // Center actual ink rather than the font's asymmetric ascender/descender padding.
+      let top=canvas.height, bottom=-1;
+      for(let i=3;i<pixels.data.length;i+=4) if(pixels.data[i]) {
+        const y=Math.floor(i/4/canvas.width);top=Math.min(top,y);bottom=Math.max(bottom,y);
+      }
+      if(bottom>=top) {
+        const ink=ctx.getImageData(0,top,canvas.width,bottom-top+1);
+        canvas.height=ink.height;ctx.putImageData(ink,0,0);
+      }
+    }
+    setDimensions({width:canvas.width/size,height:canvas.height/size});
     };
     void document.fonts.load('22px "Console UI"').then(draw).catch(draw);
     return () => { cancelled = true; };
-  }, [children, color]);
-  return <span className={`bitmap ${className}`}>
-    <span className={width ? 'sr-only' : 'bitmap-fallback'}>{children}</span>
-    <canvas ref={ref} aria-hidden="true" style={{ width: width ? `${width}em` : 0, height: '1.4091em', display: width ? 'inline-block' : 'none' }} />
+  }, [children, color, centered]);
+  return <span className={`bitmap ${centered ? "bitmap-centered" : ""} ${className}`}>
+    <span className={dimensions ? 'sr-only' : 'bitmap-fallback'}>{children}</span>
+    <canvas ref={ref} aria-hidden="true" style={{ width: dimensions ? `${dimensions.width}em` : 0, height: dimensions ? `${dimensions.height}em` : 0, display: dimensions ? centered ? 'block' : 'inline-block' : 'none' }} />
   </span>;
 }

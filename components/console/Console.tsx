@@ -1,12 +1,13 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import BitmapText from './BitmapText';
+import ControlIcon from './ControlIcon';
 import Scene from './Scene';
 import SaveIcon from './SaveIcon';
 import ProjectDetail from './ProjectDetail';
-import { Switch } from '@/components/ui/switch';
+import Settings from './Settings';
 import { BOOT_DURATION, BOOT_KEY, bootFrame } from '@/lib/console/timeline';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, ArrowUpRight } from 'lucide-react';
 import { about, projects } from '@/lib/console/content';
 import { parseHash, routeHash, type Route } from '@/lib/console/navigation';
 import { ConsoleAudio } from '@/lib/console/audio';
@@ -15,6 +16,7 @@ const menu = [{ title: 'Browser', view: 'browser' }, { title: 'About Me', view: 
 export default function Console() {
   const [ready, setReady] = useState(false), [boot, setBoot] = useState(false), [elapsed, setElapsed] = useState(0);
   const [changing, setChanging] = useState(false);
+  const [settingIndex,setSettingIndex]=useState(0);
   const transition = useRef<ReturnType<typeof setTimeout> | null>(null);
   const motionState = useRef(false);
   const [route, setRoute] = useState<Route>({ view: 'menu' });
@@ -111,7 +113,7 @@ export default function Console() {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
       if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
         // Leave arrows available for reading long project descriptions.
-        if (route.view === 'project' || route.view === 'about') return;
+        if (route.view === 'settings' || route.view === 'project' || route.view === 'about') return;
         const items = [...(root.current?.querySelectorAll<HTMLElement>(optionsOpen ? '.save-options [data-nav-item]' : '[data-nav-group] [data-nav-item]') || [])];
         if (!items.length) return;
         event.preventDefault();
@@ -149,19 +151,19 @@ export default function Console() {
   return <main ref={root} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
     <h1 className="sr-only">Louis’s portfolio</h1>
     <div className="screen-haze" aria-hidden="true" />
-    {ready && !failed && <Scene boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
+    {ready && !failed && <Scene settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
     <div className="transition-black" style={{ opacity: !reduced && !boot && changing ? 1 : 0 }} aria-hidden="true" />
     <header className="console-top"><button id="sound-control" data-sound-toggle className="sound-button" onClick={toggleSound} aria-pressed={sound} aria-busy={soundLoading} aria-label={sound ? 'Mute sound' : 'Enable sound'} title={sound ? 'Mute sound' : 'Enable sound'}>{sound ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}</button></header>
     {audioError && <output className="audio-status">{audioError}</output>}
     {boot ? <>
       <div className="boot-titles" style={{ opacity: bootFrame(elapsed).title }}><p><BitmapText>Louis Computer Entertainment</BitmapText></p></div>
-      <div className="boot-bottom"><button onClick={finish} aria-label="Skip intro">Skip intro <span aria-hidden="true">×</span></button></div>
+      <div className="boot-bottom"><button onClick={finish} aria-label="Skip intro"><span>Skip intro</span><ControlIcon kind="cross" /></button></div>
     </> : <div key={`${route.view}-${route.projectId || ""}`} className={`screen-content ${changing ? "is-changing" : ""}`}>
       {route.view === 'menu' ? <>
         <nav className="main-menu" aria-label="Main menu" data-nav-group>{menu.map((item, i) => <a id={`menu-${item.view}`} data-nav-item key={item.title} href={routeHash({view:item.view})} className={`menu-item ${selected === i ? 'selected' : ''}`} onClick={() => { remember(); audio.current?.cue('enter'); }} onFocus={() => selection(i, 'menu')} onMouseEnter={() => selection(i, 'menu')}><BitmapText>{item.title}</BitmapText></a>)}</nav>
 
       </> : <>
-        {route.view !== 'browser' && <div className="screen-title"><h2><BitmapText>{title}</BitmapText></h2></div>}
+        {route.view !== 'browser' && route.view !== 'settings' && <div className="screen-title"><h2><BitmapText>{title}</BitmapText></h2></div>}
         {route.view === 'browser' && <section className="save-browser" aria-label="Memory card saves">
           <h2 className="memory-label"><BitmapText>Memory Card (PS2)/1</BitmapText></h2>
           <h3 className="selected-save-title" aria-live="polite"><BitmapText color="#e8ed81">{projects[save].title}</BitmapText></h3>
@@ -178,22 +180,15 @@ export default function Console() {
         {route.view === 'about' && <section className="about-panel scroll-panel">
           <h1 tabIndex={-1} data-screen-heading><BitmapText>{about.intro}</BitmapText></h1>
           {about.paragraphs.map(p=><p key={p}>{p}</p>)}
-          <a id="github-profile" className="launch-link" href={about.url} target="_blank" rel="noreferrer">Find me on GitHub<span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+          <a id="github-profile" className="launch-link" href={about.url} target="_blank" rel="noreferrer">Find me on GitHub<ArrowUpRight className="action-icon" aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span></a>
         </section>}
-        {route.view === 'settings' && <section className="settings-panel scroll-panel" aria-label="System settings">
-          <h1 className="sr-only" tabIndex={-1} data-screen-heading>System settings</h1>
-          <div data-nav-group>
-            <div className="setting-row"><div><label htmlFor="audio-switch"><BitmapText>Sound</BitmapText></label><p>Startup, ambience, and menu sounds.</p></div><Switch data-sound-toggle id="audio-switch" data-nav-item checked={sound} disabled={soundLoading} onCheckedChange={toggleSound} aria-label="Sound" className="console-switch" /></div>
-            <div className="setting-row"><div><label htmlFor="motion-switch"><BitmapText>Animation</BitmapText></label><p>Camera movement and animated save icons.</p></div><Switch id="motion-switch" data-nav-item checked={!reduced} onCheckedChange={value => { reducedOverride.current=true; setReduced(!value); }} aria-label="Animation" className="console-switch" /></div>
-            <button id="replay-intro" data-nav-item className="setting-row replay-row" onClick={replay} disabled={reduced || failed}><div><BitmapText>Replay intro</BitmapText><p>{reduced ? 'Enable animation to replay the startup.' : failed ? '3D startup is unavailable in this browser.' : ''}</p></div><span aria-hidden="true">↺</span></button>
-          </div>
-        </section>}
+        {route.view === 'settings' && <Settings index={settingIndex} setIndex={setSettingIndex} sound={sound} reduced={reduced} failed={failed} toggleSound={toggleSound} toggleMotion={() => { reducedOverride.current=true; setReduced(value=>!value); audio.current?.cue('enter'); }} replay={replay} cue={() => audio.current?.cue('setting')} />}
         {route.view === 'project' && <ProjectDetail key={project.id} project={project} reduced={reduced} />}
       </>}
       <footer className="console-footer">
-        {(route.view==='menu'||route.view==='browser') && <button className="footer-button footer-enter" onClick={() => route.view==='menu' ? navigate({view:menu[selected].view}) : navigate({view:'project',projectId:projects[save].id}, 'save')}><span className="controller cross" aria-hidden="true">×</span><BitmapText>Enter</BitmapText></button>}
-        {route.view !== 'menu' && <button className="footer-button footer-back" onClick={goBack} aria-label="Back"><span className="controller circle" aria-hidden="true">○</span><BitmapText>Back</BitmapText></button>}
-        {route.view === 'browser' && <button className="footer-button footer-options" aria-expanded={optionsOpen} onClick={() => { audio.current?.cue('enter'); setOptionsOpen(value=>!value); }}><span className="controller triangle" aria-hidden="true">△</span><BitmapText>Options</BitmapText></button>}
+        {(route.view==='menu'||route.view==='browser'||route.view==='settings') && <button className="footer-button footer-enter" onClick={() => route.view==='settings' ? document.getElementById('configuration-value')?.click() : route.view==='menu' ? navigate({view:menu[selected].view}) : navigate({view:'project',projectId:projects[save].id}, 'save')}><ControlIcon kind="cross" /><BitmapText centered>Enter</BitmapText></button>}
+        {route.view !== 'menu' && <button className="footer-button footer-back" onClick={goBack} aria-label="Back"><ControlIcon kind="circle" /><BitmapText centered>Back</BitmapText></button>}
+        {route.view === 'browser' && <button className="footer-button footer-options" aria-expanded={optionsOpen} onClick={() => { audio.current?.cue('enter'); setOptionsOpen(value=>!value); }}><ControlIcon kind="triangle" /><BitmapText centered>Options</BitmapText></button>}
       </footer>
     </div>}
     <noscript><div className="noscript-portfolio"><h1>Hey! I’m Louis.</h1><p>Creative coding, hardware experiments, and 3D printing.</p><ul>{projects.map(p=><li key={p.id}><a href={p.url}>{p.title}</a><p>{p.summary}</p></li>)}</ul><a href={about.url}>Find me on GitHub</a></div></noscript>

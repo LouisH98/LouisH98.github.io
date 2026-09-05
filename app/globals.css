@@ -29,7 +29,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .controller { font-family: Arial,sans-serif; display: inline-flex; align-items: center; justify-content: center; font-size: 1.9rem; width: 24px; line-height: 1; }.cross { color: #95b0ed; text-shadow: 0 0 7px #597dcc77; }.circle { color: #eb939b; }
 .footer-identity { margin-left: auto; font-size: .75rem; color: #8b899e; }.footer-identity span { margin: 0 12px; color: #55556d; }.console-footer img { width: 78px; height: auto; margin-left: 32px; opacity: .67; filter: saturate(.5); }
 .boot-titles { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; text-align: center; font-size: clamp(1.6rem, 3vw, 2.7rem); line-height: 1.3; letter-spacing: .035em; color: #ecebf4; text-shadow: 0 0 4px #adbbff; }
-.boot-bottom { position: absolute; bottom: 7%; left: 7%; right: 7%; display: flex; justify-content: space-between; align-items: center; font-size: .875rem; color: #a6a7bf; }.boot-bottom button { min-height: 44px; }.boot-bottom button span { font-size: 1.5rem; margin-left: 12px; }.is-booting .console-top > span { opacity: 0; }
+.boot-bottom { position: absolute; bottom: 7%; left: 7%; right: 7%; display: flex; justify-content: space-between; align-items: center; font-size: .875rem; color: #a6a7bf; }.boot-bottom button { min-height: 44px; }.is-booting .console-top > span { opacity: 0; }
 .scene-failed .screen-haze { background: radial-gradient(ellipse at 28% 42%, #14213d 0%, #10101b 25%, #030308 65%); }
 @media (min-width: 1700px) { .main-menu { top: 42%; } }
 @media (max-width: 700px) and (orientation: portrait) {
@@ -193,4 +193,37 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .footer-options { grid-column:3; grid-row:1; }
 @media(max-width:700px) and (orientation:portrait) {
  .console-footer { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+}
+
+/* Align symbol geometry with the visible label, not a font baseline. */
+.bitmap-centered { display:inline-flex; align-items:center; line-height:1; }
+.controller { display:block; flex:0 0 24px; width:24px; height:24px; }
+.action-icon { display:block; flex:none; width:1.25em; height:1.25em; }
+.launch-link .action-icon { color:#99b2f6; }
+.boot-bottom button { display:inline-flex; align-items:center; gap:12px; }
+.replay-row > div { display:flex; flex-direction:column; align-items:flex-start; }
+.replay-row > .action-icon { width:24px; height:24px; color:#b0bce7; }
+/* BIOS configuration: glass clock and a single cyan selection. */
+.console.view-settings:not(.is-booting) .scene { filter:none; opacity:1; }
+.view-settings .screen-haze { background:radial-gradient(ellipse at 39% 48%,#020107 0%,#05030d 20%,#151029 46%,#272040 80%,#171025 100%); }
+.configuration { position:absolute; inset:0; }
+.configuration-clock { position:absolute; top:6%; left:6%; right:10%; display:flex; justify-content:space-between; font-size:clamp(.9rem,1.8vw,1.4rem); color:#bfc0cf; }
+.configuration-clock > span { display:flex; align-items:center; gap:10px; }
+.configuration-clock svg { width:1em; height:1em; }
+.configuration-menu { position:absolute; top:41%; left:45%; right:10%; text-align:center; font-size:clamp(1.1rem,2.5vw,1.9rem); }
+.configuration-menu h2 { font-size:inherit; font-weight:400; margin:0 0 9px; white-space:nowrap; }
+.configuration-choice { position:relative; display:flex; justify-content:center; padding-right:0; }
+.configuration-name { min-height:44px; padding:0 22px; }
+.configuration-step { position:absolute; right:-42px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:#a3cbd5; }
+.configuration-step svg { width:17px; height:17px; }
+.configuration-step.previous { top:-15px; }.configuration-step.next { top:23px; }
+.configuration-value { display:flex; justify-content:center; align-items:center; gap:22px; min-height:44px; margin:4px auto 0; padding:0 10px; color:#d3d3db; }
+.configuration-value svg { width:15px; height:15px; opacity:.55; }
+.configuration-value:disabled { opacity:.45; }
+.configuration .bitmap { filter:drop-shadow(1px 1px 0 #06030c); }
+.configuration-name:focus-visible,.configuration-value:focus-visible { outline:1px dotted #c8e4f0; outline-offset:4px; }
+@media(max-width:700px) and (orientation:portrait) {
+ .configuration-clock { top:11%; left:7%; right:7%; font-size:.95rem; }
+ .configuration-menu { top:58%; left:8%; right:12%; font-size:clamp(1.15rem,5vw,1.8rem); }
+ .configuration-step { right:-24px; }
 }

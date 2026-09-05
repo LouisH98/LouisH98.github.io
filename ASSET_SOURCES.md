@@ -53,3 +53,11 @@ At the owner’s request, the colored orbs and trails remain visible above the b
 ## Latest interface reference
 
 Memory-card Browser layout follows the owner-supplied screenshot: gray gradient, outlined white memory-card label, yellow selected-save title at top right, free-standing icon grid, white selection glow, and controller prompts along the bottom. Only the three actual portfolio projects are shown; no fictional game saves or free-space count are inserted. The PS2 logo has been removed and the boot title is “Louis Computer Entertainment”.
+
+### System Configuration reference
+- [PlayStation 2 — System Browser & Configuration](https://www.youtube.com/watch?v=cf9Ht8OFyEM&t=14), inspected locally at 12–42 seconds. The 14-second glass sculpture and subsequent configuration screens guide the violet field, radial hexagonal prisms, translucent cubes, date/clock, yellow title, cyan selection, and single-setting layout.
+- Geometry and reflection texture are authored procedurally in `components/console/settingsSculpture.ts`; no video frames are shipped. Settings retain portfolio functions (sound, animation, and intro replay) rather than nonfunctional console hardware options. The date and clock show local browser time.
+- Cubes use the bundled Three.js `RoundedBoxGeometry` addon. Reflection and background textures are generated locally.
+- Refraction now uses a custom Snell-law screen-space shader (IOR 1.45). Each piece captures the other pieces behind its center, excluding itself and nearer objects, plus the orb overlay. Captures are bounded to 320 pixels wide (192 on small render buffers), use lightweight transparent proxies, and are disposed on scene cleanup. This is a single-bounce approximation with center-depth ordering, not recursive ray tracing through intersecting glass.
+- Configuration selection highlights follow the cyan glass accents visible in the reference: Sound, Animation, and Replay Intro each illuminate a different cube/prism pair. Highlights crossfade on selection and switch immediately with reduced motion; their emissive proxy is included in other pieces' refraction captures.
+- The aligned radial shard plane slowly pitches, yaws, and rolls as a whole. Main-menu lights follow a shared orbit, compress into an ordered queue, then return to equal spacing; their trails sample their actual displayed positions.
