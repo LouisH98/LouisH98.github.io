@@ -25,7 +25,8 @@ export default function Scene(props: Props) {
     const crt = createCrtShader(renderer);
     renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap;
     renderer.shadowMap.autoUpdate=false; renderer.shadowMap.needsUpdate=true;
-    const bedroom=createBedroomScene(renderer);
+    let roomDirty=true;
+    const bedroom=createBedroomScene(renderer,()=>{roomDirty=true;});
     const televisionPicture=createLinearTarget(renderer);
     const handoffScene=new THREE.Scene();
     const handoffMaterial=new THREE.MeshBasicMaterial({map:televisionPicture.texture,transparent:true,depthTest:false,depthWrite:false});
@@ -123,7 +124,7 @@ export default function Scene(props: Props) {
       titleTexture.needsUpdate = true;
     };
     drawTitle(); void document.fonts.load('44px "Console UI"').then(drawTitle).catch(() => {});
-    let width=1,height=1,portrait=false, roomDirty=true;
+    let width=1,height=1,portrait=false;
     let resolution=renderResolution(1,1,1), outputWidth=0, outputHeight=0;
     const unsubscribeLighting=subscribeLighting(()=>{roomDirty=true;});
     const resize=()=>{
@@ -150,6 +151,7 @@ export default function Scene(props: Props) {
       frame=requestAnimationFrame(animate);
       const dt=Math.min((now-previous)/1000,.05); previous=now; if(document.hidden)return;
       const p=state.current;
+      bedroom.setEditingAvailable(p.powered===false);
       if (p.powered === false && !roomDirty && (p.reduced || now-lastRoomFrame<1000/24)) return;
       lastRoomFrame=now;
       const roomActive=p.powered !== undefined && (!p.powered || (p.boot && crtZoom(p.elapsed)<1));

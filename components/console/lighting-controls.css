@@ -13,3 +13,14 @@
 .lighting-dev-actions button:hover { background:#364357; }
 .lighting-dev-status { display:block; font-size:12px; }
 .lighting-dev textarea { width:100%; min-height:170px; margin-top:10px; font:12px/1.5 monospace; background:#090d13; color:#d6e2ef; padding:8px; border:1px solid #3b4350; }
+
+.layout-dev { position:fixed; bottom:16px; left:16px; z-index:100; width:min(270px,calc(100vw - 32px)); padding:12px; border:1px solid #3b4350; border-radius:10px; background:#14181ff5; color:#e5e7eb; font:12px/1.4 Arial,sans-serif; }
+.layout-dev label { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer; }
+.layout-dev input { accent-color:#dfa66b; }
+.layout-dev p { color:#a8b3c3; margin:8px 0; }
+.layout-dev select,.layout-dev textarea { width:100%; background:#090d13; color:#e5e7eb; border:1px solid #3b4350; padding:6px; }
+.layout-dev output { display:block; margin:8px 0; color:#f3bf88; }
+.layout-dev > div { display:flex; gap:8px; }
+.layout-dev button { flex:1; min-height:36px; background:#27303d; border-radius:5px; }
+.layout-dev textarea { margin-top:8px; height:140px; }
+.layout-dev-surface { position:fixed; inset:0; z-index:40; touch-action:none; cursor:grab; }
