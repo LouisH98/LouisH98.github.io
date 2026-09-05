@@ -3,6 +3,7 @@ import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import { createIntroProfiler } from './introProfiler';
 import { createSettingsSculpture } from './settingsSculpture';
+import { cityParticle, incomingParticle, particleSlot } from '@/lib/console/particleMotion';
 import { bootFrame, smooth } from '@/lib/console/timeline';
 import { crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
 import { subscribeLighting } from '@/lib/console/lighting';
@@ -154,11 +155,10 @@ export default function Scene(props: Props) {
     // first-use uniform/buffer initialization on every driver.
     crt.render(renderer,0,0);
     let frame=0,time=0,previous=0,initialized=false;
-    let settingsAmount=0, menuPlay=0, menuChaseAngle=0;
+    let settingsAmount=0;
     let backgroundAlpha=state.current.boot?1:0;
     const center=new THREE.Vector2(), target=new THREE.Vector2(); let radius=.28;
     const blue=new THREE.Color(0x398fff);
-    const orbit=(i:number,t:number)=>new THREE.Vector2(Math.sin(t*1.13+i*1.57)*(.16+t*.018),Math.cos(t*.87+i*1.57)*.13+Math.sin(t*1.7+i)*.055);
     let lastRoomFrame=0;
     const animate=(now:number)=>{
       frame=requestAnimationFrame(animate);
@@ -178,7 +178,7 @@ export default function Scene(props: Props) {
       const textWidth=Math.min(sourceAspect*1.9,2.8);title.scale.set(textWidth,textWidth/8,1);
       if(p.reduced||(p.boot&&!wasBoot))histories.forEach(h=>{h.length=0;});
       wasBoot=p.boot;
-      if(!p.reduced)time+=dt;
+      if(!p.reduced)time=p.boot?Math.max(0,p.elapsed):time+dt;
       const pictureTime=Math.max(0,p.elapsed);
       const phase=bootFrame(pictureTime), morph=p.boot?phase.morph:1;
       const curvature = roomActive && p.boot && !p.reduced ? 1 - crtZoom(p.elapsed) : 0;
@@ -186,7 +186,6 @@ export default function Scene(props: Props) {
       renderer.setRenderTarget(crt.target);
       const menu=p.boot||p.view==='menu', settings=!p.boot&&p.view==='settings';
       settingsAmount=THREE.MathUtils.lerp(settingsAmount,settings?1:0,p.reduced?1:1-Math.exp(-dt*2));
-      menuPlay=THREE.MathUtils.lerp(menuPlay,!p.boot&&p.view==='menu'&&!p.reduced?1:0,p.reduced?1:1-Math.exp(-dt*2));
       target.set(settings?(portrait?0:-camera.aspect*.21):menu?(portrait?0:-camera.aspect*.41):0,settings?(portrait?.3:0):menu?(portrait?.38:.02):0);
       const targetRadius=settings?.25:menu?(portrait?.245:.31):(portrait?.42:.48);
       const blend=p.reduced||!initialized?1:1-Math.exp(-dt*4.5);
@@ -205,29 +204,19 @@ export default function Scene(props: Props) {
       if(settings&&settingsAmount>.001)sculpture.update(time,camera.aspect,portrait,settingsAmount,p.settingIndex??0,p.reduced);
       haze.material.opacity=p.boot?.25*phase.field:.045;
       clouds.forEach((cloud,i)=>{cloud.material.opacity=p.boot?.32*phase.field:0;cloud.material.rotation=time*.018*(i%2?1:-1);cloud.position.set(Math.sin(time*.15+i)*.13,Math.cos(time*.13+i)*.07,0);});
-      // A single ordered queue on a shared orbit. Equal positive angular gaps
-      // contract and expand together, so lights never cross or overtake.
-      if(!p.reduced)menuChaseAngle+=dt*.3*menuPlay;
-      const cycle=time%22;
-      const gather=menuPlay*(cycle<5?0:cycle<10?smooth((cycle-5)/5):cycle<13?1:cycle<18?1-smooth((cycle-13)/5):0);
       for(let i=0;i<8;i++){
-        // Each adjacent pair starts as one coloured light, then separates.
+        // Four existing lights keep their identities; four enter from beyond
+        // the screen edges into the alternating vacant ring slots.
         const parent=Math.floor(i/2);
-        const split=smooth(morph/.65);
-        const phaseAngle=(parent*2+.5+(i%2-.5)*split)/8*Math.PI*2;
-        const theta=phaseAngle+time*.55+menuChaseAngle
-          +(3.5-i)*(Math.PI/4-.23)*gather
-          +Math.sin(time*.61+i*.9)*.17*(1-menuPlay);
-        const r=radius*(1+Math.sin(time*.34)*(.12-.06*menuPlay)
-          +Math.sin(time*.47+i*1.3)*.075*(1-menuPlay));
-        const tilt=THREE.MathUtils.lerp(.45+Math.sin(time*.37)*.95,.35+Math.sin(time*.17)*.4,menuPlay);
-        const roll=Math.sin(time*.23)*.5+time*.06;
-        const x=Math.cos(theta)*r, y=Math.sin(theta)*r*Math.cos(tilt), depth=Math.sin(theta)*Math.sin(tilt);
-        const ring=new THREE.Vector2(center.x+x*Math.cos(roll)-y*Math.sin(roll),center.y+x*Math.sin(roll)+y*Math.cos(roll));
-        const start=orbit(parent,pictureTime);
-        const sprite=sprites[i]; sprite.position.set(THREE.MathUtils.lerp(start.x,ring.x,morph),THREE.MathUtils.lerp(start.y,ring.y,morph),0);
+        const newcomer=i%2===1;
+        const arrival=newcomer?smooth((morph-parent*.055)/(1-parent*.055)):morph;
+        const slot=particleSlot(i,time,radius);
+        const depth=slot.depth;
+        const ring={x:center.x+slot.x,y:center.y+slot.y};
+        const start=newcomer?incomingParticle(parent,pictureTime,sourceAspect):cityParticle(parent,pictureTime,sourceAspect);
+        const sprite=sprites[i]; sprite.position.set(THREE.MathUtils.lerp(start.x,ring.x,arrival),THREE.MathUtils.lerp(start.y,ring.y,arrival),0);
         sprite.material.color.setHex(colors[parent]).lerp(blue,smooth((morph-.35)/.65));
-        sprite.material.opacity=(.5+.5*split)*(1+depth*.18*morph);
+        sprite.material.opacity=1+depth*.18*morph;
         const size=THREE.MathUtils.lerp(.058,radius*(.46+depth*.09),smooth((morph-.2)/.8));
         sprite.scale.setScalar(size);
         const core=cores[i];core.position.copy(sprite.position);core.scale.setScalar(size*.32);

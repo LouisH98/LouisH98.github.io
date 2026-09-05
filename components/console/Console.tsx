@@ -132,7 +132,8 @@ export default function Console() {
   function powerOn() {
     if (!ready || powerState.current) return;
     powerState.current = true;
-    const intro = parseHash(location.hash).view === 'menu' && !reduced && !failed;
+    // A saved/deep-linked route chooses the destination, not whether the TV boots.
+    const intro = !reduced && !failed;
     const start = 0;
     setElapsed(start); currentFrame.current = { boot: intro, elapsed: start };
     setBoot(intro); setPowered(true);

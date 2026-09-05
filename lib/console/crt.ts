@@ -11,9 +11,13 @@ export function crtPowerFrame(seconds: number) {
 }
 
 // Follow the tower dive, reaching the viewport before the 12-second menu handoff.
-export const CRT_ZOOM_START = 9;
+export const CRT_ZOOM_START = 8;
 export const CRT_ZOOM_END = 11.7;
-export const crtZoom = (seconds: number) => smooth((seconds - CRT_ZOOM_START) / (CRT_ZOOM_END - CRT_ZOOM_START));
+export function crtZoom(seconds: number) {
+  const t=Math.min(1,Math.max(0,(seconds-CRT_ZOOM_START)/(CRT_ZOOM_END-CRT_ZOOM_START)));
+  // Quintic easing starts and finishes with zero velocity and acceleration.
+  return t*t*t*(t*(t*6-15)+10);
+}
 
 /** Animate the aperture itself so the live scene never stretches or swaps canvases. */
 export function crtLayout(width: number, height: number, progress: number) {
