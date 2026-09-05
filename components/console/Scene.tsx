@@ -43,11 +43,6 @@ export default function Scene(props: Props) {
       const tower=new THREE.Mesh(box,materials);
       tower.scale.set(2.05,height,2.05);tower.position.set(col*2.65,height/2,row*2.65);field.add(tower);
     }
-    for (const [x,z] of [[-12,-8],[12,-8],[-12,8]]) {
-      const cluster = new THREE.Group(); cluster.position.set(x, 7, z); cluster.rotation.set(.18,.52,.2);
-      for (let i=0;i<5;i++) { const cube=new THREE.Mesh(box,materials); cube.scale.setScalar(2.4); cube.position.set((i%2)*2,Math.floor(i/2)*1.7,(i%3)*1.3); cluster.add(cube); }
-      field.add(cluster);
-    }
     const glowCanvas = document.createElement('canvas'); glowCanvas.width = glowCanvas.height = 64;
     const ctx = glowCanvas.getContext('2d')!;
     const gradient = ctx.createRadialGradient(32,32,0,32,32,32);
