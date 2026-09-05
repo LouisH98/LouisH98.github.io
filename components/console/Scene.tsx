@@ -5,6 +5,7 @@ import { createSettingsSculpture } from './settingsSculpture';
 import { bootFrame, smooth } from '@/lib/console/timeline';
 import { crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
 import { subscribeLighting } from '@/lib/console/lighting';
+import { renderResolution } from '@/lib/console/renderResolution';
 import { createLinearTarget } from './renderPipeline';
 import { createCrtShader } from './crtShader';
 import { createBedroomScene } from './bedroomScene';
@@ -123,13 +124,13 @@ export default function Scene(props: Props) {
     };
     drawTitle(); void document.fonts.load('44px "Console UI"').then(drawTitle).catch(() => {});
     let width=1,height=1,portrait=false, roomDirty=true;
+    let resolution=renderResolution(1,1,1), outputWidth=0, outputHeight=0;
     const unsubscribeLighting=subscribeLighting(()=>{roomDirty=true;});
     const resize=()=>{
       width=container.clientWidth; height=container.clientHeight; portrait=width/height<.85;
-      const resolution=Math.min(1,(width<650?650:1440)/width);
-      renderer.setSize(Math.round(width*resolution),Math.round(height*resolution),false);
-      crt.resize(Math.round(width*resolution),Math.round(height*resolution));
-      televisionPicture.setSize(Math.round(width*resolution),Math.round(height*resolution));
+      resolution=renderResolution(width,height,window.devicePixelRatio || 1);
+      crt.resize(resolution.uiWidth,resolution.uiHeight);
+      televisionPicture.setSize(resolution.uiWidth,resolution.uiHeight);
       roomDirty=true;
       camera.aspect=width/height; camera.updateProjectionMatrix();
       fadePlane.scale.x=camera.aspect;
@@ -150,6 +151,12 @@ export default function Scene(props: Props) {
       const p=state.current;
       if (p.powered === false && !roomDirty) return;
       const roomActive=p.powered !== undefined && (!p.powered || (p.boot && crtZoom(p.elapsed)<1));
+      const nextWidth=roomActive?resolution.roomWidth:resolution.uiWidth;
+      const nextHeight=roomActive?resolution.roomHeight:resolution.uiHeight;
+      if(outputWidth!==nextWidth || outputHeight!==nextHeight){
+        renderer.setSize(nextWidth,nextHeight,false);
+        outputWidth=nextWidth;outputHeight=nextHeight;
+      }
       const roomProgress=p.powered && p.boot ? crtZoom(p.elapsed) : 0;
       const powerTime=p.boot && p.elapsed<0 ? p.elapsed+CRT_POWER_DURATION : null;
       const sourceAspect=roomActive?THREE.MathUtils.lerp(4/3,width/height,smooth((roomProgress-.65)/.35)):width/height;

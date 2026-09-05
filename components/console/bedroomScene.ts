@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { configureGlassReflection } from './glassReflection';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { createWindowAtmosphere } from './windowAtmosphere';
 import { getLighting, getReflectionRevision, LIGHTING_DEFAULTS } from '@/lib/console/lighting';
@@ -135,6 +136,7 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
   }
   screenGeometry.computeVertexNormals();
   const screenMaterial = new THREE.MeshPhysicalMaterial({color:'#080e13',roughness:.13,metalness:0,clearcoat:1,clearcoatRoughness:.055,envMapIntensity:.65,emissive:'#ffffff',emissiveIntensity:0});
+  configureGlassReflection(screenMaterial);
   materials.push(screenMaterial);
   const screen=new THREE.Mesh(screenGeometry,screenMaterial);screen.position.set(0,.11,.675);room.add(screen);
   // The physical power key has a red standby LED and a DOM hit target projected onto it.
@@ -176,7 +178,8 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
   const diffuserMaterial=new THREE.MeshBasicMaterial({color:new THREE.Color(lampColor).multiplyScalar(2.2)});materials.push(diffuserMaterial);
   const diffuser=new THREE.Mesh(new THREE.CircleGeometry(.285,48),diffuserMaterial);diffuser.position.copy(taskShade.position).addScaledVector(taskDirection,.18);diffuser.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),taskDirection);room.add(diffuser);
   const taskLight=new THREE.SpotLight(lampColor,8,7,.7,.72,2);taskLight.position.copy(diffuser.position).addScaledVector(taskDirection,.045);taskLight.target.position.copy(keyboardTarget);taskLight.castShadow=true;taskLight.shadow.mapSize.set(1024,1024);taskLight.shadow.bias=-.0004;taskLight.shadow.normalBias=.02;taskLight.shadow.radius=3;room.add(taskLight,taskLight.target);
-  const taskBounce=new THREE.PointLight(lampBounceColor,.45,3,2);taskBounce.position.set(-.35,-1.1,1.13);room.add(taskBounce);
+  // The lit keyboard is captured by the reflection probe. A point-light bounce here
+  // produced a fictional pinprick in the glass instead of reflecting the keycaps.
 
   // A dimensional night view: clouded sky, distant rooftops, and scattered apartment windows.
   const skyMaterial=new THREE.ShaderMaterial({depthWrite:false,vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,fragmentShader:`varying vec2 vUv;void main(){float clouds=sin(vUv.x*18.0+sin(vUv.y*27.0))*sin(vUv.y*21.0+vUv.x*5.0);vec3 sky=mix(vec3(.04,.065,.105),vec3(.006,.014,.032),smoothstep(0.0,1.0,vUv.y));sky+=vec3(.004,.006,.009)*smoothstep(.1,.8,clouds);gl_FragColor=vec4(sky,1.0);#include <colorspace_fragment>}`.replace(';#include',';\n#include')});materials.push(skyMaterial);
@@ -194,7 +197,7 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
 
   // Capture the actual room from the glass, excluding the screen itself to avoid feedback.
   // This is a static environment probe, not a painted reflection or screen-space approximation.
-  const reflectionTarget=new THREE.WebGLCubeRenderTarget(512,{type:renderer.extensions.has('EXT_color_buffer_float')?THREE.HalfFloatType:THREE.UnsignedByteType});
+  const reflectionTarget=new THREE.WebGLCubeRenderTarget(window.innerWidth < 600 ? 512 : 1024,{type:renderer.extensions.has('EXT_color_buffer_float')?THREE.HalfFloatType:THREE.UnsignedByteType});
   const probe=new THREE.CubeCamera(.05,45,reflectionTarget);probe.position.set(0,.11,.83);
   let reflectionRevision=getReflectionRevision();
   let environment:THREE.WebGLRenderTarget|undefined;
@@ -204,8 +207,8 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
     lamp.intensity=p.bedside;taskLight.intensity=p.desk;moon.intensity=p.window;
     lamp.color.set(p.lampColor);taskLight.color.set(p.lampColor);
     const bounceColor=p.lampColor===LIGHTING_DEFAULTS.lampColor?lampBounceColor:p.lampColor;
-    warmBounce.color.set(bounceColor);taskBounce.color.set(bounceColor);
-    warmBounce.intensity=p.bedside/6*.8;taskBounce.intensity=p.desk/8*.45;
+    warmBounce.color.set(bounceColor);
+    warmBounce.intensity=p.bedside/6*.8;
     diffuserMaterial.color.set(p.lampColor).multiplyScalar(2.2*p.desk/8);
     shadeMat.emissive.set(p.lampColor===LIGHTING_DEFAULTS.lampColor?'#ef923b':p.lampColor);shadeMat.emissiveIntensity=.35*p.bedside/6;
     screenMaterial.envMapIntensity=p.reflection;screenMaterial.roughness=p.glassRoughness;screenMaterial.clearcoatRoughness=p.clearcoatRoughness;
@@ -214,8 +217,17 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer) {
     const pmrem=new THREE.PMREMGenerator(renderer);
     const previousShadowUpdate=renderer.shadowMap.autoUpdate;
     renderer.shadowMap.autoUpdate=true;
-    screen.visible=false;probe.update(renderer,room);screen.visible=true;
-    renderer.shadowMap.autoUpdate=previousShadowUpdate;
+    const previousEnvironment=room.environment;
+    const previousVisibility=screen.visible;
+    // Never bake the previous probe into its replacement when refreshing settings.
+    room.environment=null;
+    screen.visible=false;
+    try { probe.update(renderer,room); }
+    finally {
+      screen.visible=previousVisibility;
+      room.environment=previousEnvironment;
+      renderer.shadowMap.autoUpdate=previousShadowUpdate;
+    }
     const next=pmrem.fromCubemap(reflectionTarget.texture);pmrem.dispose();
     room.environment=next.texture;screenMaterial.envMap=next.texture;screenMaterial.needsUpdate=true;
     environment?.dispose();environment=next;
