@@ -1,34 +1,58 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Louis’s PS2 portfolio
 
-## Getting Started
+A static React/TypeScript portfolio with a Three.js boot sequence, a blue-orb console menu, bitmap-rendered text, and three project saves. Content and media are bundled locally. The site needs no API, account, database, Worker, or runtime GitHub connection.
 
-First, run the development server:
+## Run locally
 
-```bash
+Use Node 24 LTS (minimum 22.13) and npm:
+
+```sh
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the local URL printed by the server. The intro runs once per tab session. Sound defaults to a quiet level; if the browser blocks autoplay, it unlocks on the first click or keypress. The speaker icon in the top-right corner toggles sound. **System Configuration → Replay intro** replays it. Direct hash links bypass boot, and reduced-motion preferences skip it. A reload restores the default quiet sound preference; browser autoplay rules still apply.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Static build and GitHub Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```sh
+npm run build
+npm start
+```
 
-## Learn More
+The deployable site is **`dist/client/`**, including HTML, JavaScript, fonts, images, video, and audio. Publish only that directory. The local static server listens on port 4173 by default.
 
-To learn more about Next.js, take a look at the following resources:
+For repository Pages rather than a root domain:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```sh
+PAGES_BASE_PATH=/ps2folio npm run build
+PAGES_BASE_PATH=/ps2folio npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+Open `http://127.0.0.1:4173/ps2folio/`. The base path is a build-time value and must match the hosting path. Set it to an empty string for `LouisH98.github.io` or a root custom domain.
 
-## Deploy on Vercel
+The workflow in `.github/workflows/pages.yml` builds and publishes on pushes to `main` or manual dispatch after Pages is configured to use GitHub Actions. It obtains the base path from `actions/configure-pages`. This implementation has not pushed, published, or replaced the existing portfolio.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Content and behavior
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- Edit biography and typed project records in `lib/console/content.ts`.
+- Hash routes: `#/`, `#/browser`, `#/about`, `#/settings`, and `#/project/<id>`.
+- Arrow keys select items; Enter opens them; Escape or Back returns to the parent screen. Tab reaches all controls and links. Touch needs a single tap to open a save.
+- WebGL failure falls back to a static console background and project thumbnails. Content and navigation remain available. A no-JavaScript summary links to all projects.
+- Reduced motion stops the orbs/save icons, skips boot, and shows video posters. Video playback also pauses when outside its scroll viewport or when the tab is hidden.
+- Startup, menu effects, ambient audio, 3D resources, and event listeners are stopped or disposed when appropriate.
+
+## Checks
+
+```sh
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
+
+Unit tests cover boot phases, route round trips, missing IDs, root/subpath asset URLs, project media, audio opt-in and synchronization, visibility changes, failure handling, and disposal during loading. Browser test scenarios are recorded in `VALIDATION.md`.
+
+The scaffold’s vendored UI catalog is excluded from linting. `react/react-compiler` is disabled because this app does not enable React Compiler and synchronizes imperative WebGL/audio references; normal Rules of Hooks and dependency linting remain enabled. Static image elements are intentional: there is no image-optimization server.
+
+See `ASSET_SOURCES.md` for media provenance and the distinction between original recorded assets and the authored 3D recreation.

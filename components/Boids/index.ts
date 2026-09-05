@@ -1,1 +1,0 @@
-export { Boids } from "./Boids";
