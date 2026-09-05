@@ -62,3 +62,39 @@ TypeScript, lint, all 11 Node tests, and the production build pass. New geometry
 Added a 1.15-second phosphor ignition before the full intro: centre point, horizontal beam, expanding raster, and a short black settle. Replay includes ignition. The same visibility-aware clock drives both phases; reduced motion bypasses them. Audio unlocks on the original power gesture but cannot start the soundtrack or navigation cues during ignition. Added tests for audio handoff and ignition phases; all 13 tests, type checks, lint, and the production build pass.
 
 Corrected scanline sampling: cosine at half-pixel centres had produced a constant value across raster rows. The shader now samples a sine wave in warped screen coordinates, with stronger scanline contrast, RGB phosphor columns, edge shading, and colour separation. Effects still fade to zero during the zoom. Visual browser review of the revised treatment remains pending.
+
+## 3D bedroom entrance
+
+Replaced the primary flat casing with a real Three.js CRT on a wooden desk in a dim bedroom. The monitor has an extruded bevelled aperture, subdivided convex glass with UVs, cabinet depth, pedestal, vents, speaker grooves, and a projected accessible power target. The running intro and ignition are rendered to the emissive screen texture in the same WebGL context. The room includes a keyboard, bed with draped geometry, window, warm bedside lamp, procedural surface textures, environment reflections, and static shadows. The camera aligns and approaches the monitor, then composites the same running picture across the viewport for the final handoff. The old casing remains a no-WebGL fallback.
+
+All 14 Node tests, TypeScript, lint, and production build pass. Added camera checks cover desktop, ultrawide, phone portrait, and phone landscape: initial perspective, alignment before handoff, monotonic approach, and final glass coverage. Browser visual and physical-device performance checks remain pending; no publication was requested or performed.
+
+## Front-on composition, atmosphere, and practical lighting
+
+The camera now starts centred at screen height and approaches straight-on. The desk occupies an alcove against a wall, with cases, a wired controller, mug, notebook, pencil, speaker, and shelf. The left wall has a real window opening so the exterior spotlight passes through its frame. Lower environment, hemisphere, and fill lighting preserve a dim interior; a warm bedside practical, subtle warm bounce, and powered screen light provide local illumination.
+
+Added a 24-step depth-aware window-scattering pass. Rays trace through a four-pane window mask, accumulate a soft bounded haze, and stop at the opaque room surface reconstructed from its depth texture. The pass renders only while the bedroom is visible; standby remains static. Updated front-on camera assertions, all 14 tests, type checks, lint, and the production build pass. The new lighting has not been visually verified in a browser or profiled on physical devices.
+
+## Corrected window-to-bed light direction
+
+The physical spotlight and volumetric pass now share a single light-path definition in `lib/console/windowLight.ts`. It travels backward into the room toward the bed, rather than forward across the monitor. Removed the intervening alcove partitions that would block that path, retained low storage behind the desk, and moved the shelf to the actual rear wall. Reduced haze density and the CRT's oversized environment reflection. A new geometry test checks that the entire beam remains behind the monitor face and that its centre reaches the bedding. All 15 tests, type checks, lint, and production build pass; the updated rendered appearance has not been browser-verified.
+
+## Linear HDR pipeline and black-level correction
+
+Replaced the room, CRT source, and processed television-picture buffers with linear-sRGB half-float targets when EXT_color_buffer_float is available. Unsupported devices retain an 8-bit fallback. The room and depth-aware atmosphere composite in linear light; only the final bedroom output applies ACES filmic tone mapping (exposure 1.05), sRGB encoding, and dithering. Renderer tone-mapping state is restored before the fullscreen portfolio renders. Removed blanket room fog and prevented CRT grain from adding light to black source pixels. Selected the current PCF shadow mode rather than its deprecated alias.
+
+Browser review used the existing in-app preview, including before/after desktop screenshots, power-on ignition, fullscreen menu completion, and 390×844 standby/intro screenshots. The previously visible coloured contours on the glass and lamp falloff no longer appear in the checked images; shadows are deeper and the intro remains readable. No renderer/shader errors were returned by the browser log check; the observed shadow-mode deprecation was corrected. Physical-device performance and display-specific banding remain unmeasured. All 16 tests, type checks, lint, and production build pass. The new test covers HDR target precision, linear colour space, and the supported fallback. Models were not changed in this pass.
+
+## Task lamp, night exterior, and captured reflections
+
+Added a shaded metal desk lamp with a warm, shadow-casting spotlight aimed at the keyboard and a restrained local bounce. Replaced the opaque window panel with lightly tinted transparent glazing. The exterior contains a clouded procedural night sky, dimensional rooftops, and selected illuminated apartment windows. Shortened the rear wall to the room's actual width so it no longer blocks the exterior sightline.
+
+Removed the generic RoomEnvironment studio reflection. A static 512px-per-face cube probe captures the completed room with the screen hidden, then PMREM prefilters that capture for the convex glass and material roughness. The probe is captured once at scene setup; it does not dynamically reflect changing screen illumination. Glass uses a sharper clear coat with a subtler room-based reflection.
+
+Browser screenshots checked the warm desk pool, visible exterior windows/rooftops, removal of the glass blob, and the powered-on intro. No renderer errors were returned. Type checks, lint, all 16 tests, and the production build pass. The probe's setup cost has not been profiled on physical phones.
+
+## Lighting lab and selected preset
+
+Added development-only live lighting controls, local persistence, JSON export, reset, scene restart, and explicit reflection refresh. Slider interactions cannot trigger portfolio keyboard navigation. Browser checks confirmed live value changes, persistence after reload, reset, and reflection refresh without renderer errors. Production output was checked to exclude the panel, its CSS, and the development storage key.
+
+Applied the owner's supplied preset as the checked-in defaults: ambient .45, environment 2, fill .42, desk 17.3, bedside 6, window 60, haze .045, exposure 1.68, screen .7, reflection 1.48, roughness .13, clear-coat roughness .055, and lamp colour #ffb66d. The desk shade, diffuser, spotlight, and local bounce now point toward the keyboard centre. Applied these defaults in the review browser and visually verified the illuminated keys. All 17 tests, type checks, lint, and build pass; the new settings test covers malformed stored values and bounds.

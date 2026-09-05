@@ -1,19 +1,23 @@
 import * as THREE from 'three';
+import { createLinearTarget } from './renderPipeline';
+import { crtPowerFrame } from '@/lib/console/crt';
 
 /** One post-process pass over the complete boot picture, including its title. */
-export function createCrtShader() {
-  const target = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: true });
+export function createCrtShader(renderer: THREE.WebGLRenderer) {
+  const target = createLinearTarget(renderer);
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const material = new THREE.ShaderMaterial({
     depthTest: false, depthWrite: false,
-    uniforms: { picture: { value: target.texture }, amount: { value: 1 }, time: { value: 0 }, rasterSize: { value: new THREE.Vector2(1, 1) } },
+    uniforms: { picture: { value: target.texture }, amount: { value: 1 }, time: { value: 0 }, rasterSize: { value: new THREE.Vector2(1, 1) }, ignition: { value: new THREE.Vector3(0,0,0) }, warming: { value: false } },
     vertexShader: `varying vec2 screenUV;
       void main() { screenUV = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
     fragmentShader: `uniform sampler2D picture;
       uniform float amount;
       uniform float time;
       uniform vec2 rasterSize;
+      uniform vec3 ignition;
+      uniform bool warming;
       varying vec2 screenUV;
       void main() {
         vec2 point = screenUV * 2.0 - 1.0;
@@ -33,7 +37,12 @@ export function createCrtShader() {
         float column = mod(floor(uv.x * rasterSize.x), 3.0);
         vec3 phosphor = column < 1.0 ? vec3(1.0, 0.78, 0.78) : column < 2.0 ? vec3(0.78, 1.0, 0.78) : vec3(0.78, 0.78, 1.0);
         float grain = fract(sin(dot(gl_FragCoord.xy + floor(time * 12.0), vec2(12.9898, 78.233))) * 43758.5453);
-        color = color * edge * scanline * mix(vec3(1.0), phosphor, amount) * (1.0 + 0.13 * amount) + (grain - 0.5) * 0.006 * amount;
+        color = color * edge * scanline * mix(vec3(1.0), phosphor, amount) * (1.0 + 0.13 * amount) + (grain - 0.5) * 0.006 * amount * smoothstep(0.0, 0.04, max(color.r, max(color.g, color.b)));
+        if (warming) {
+          vec2 beam = abs(point) / max(ignition.xy, vec2(0.001));
+          float glow = exp(-max(pow(beam.x, 6.0), pow(beam.y, 2.0)) * 1.6);
+          color = vec3(0.68, 0.86, 1.0) * glow * ignition.z;
+        }
         gl_FragColor = vec4(max(color, vec3(0.0)) * inside, 1.0);
         #include <colorspace_fragment>
       }`,
@@ -43,9 +52,16 @@ export function createCrtShader() {
   return {
     target,
     resize(width: number, height: number) { target.setSize(width, height); material.uniforms.rasterSize.value.set(width, height); },
-    render(renderer: THREE.WebGLRenderer, amount: number, time: number) {
+    render(renderer: THREE.WebGLRenderer, amount: number, time: number, destination: THREE.WebGLRenderTarget | null = null, powerTime: number | null = null) {
       material.uniforms.amount.value = amount; material.uniforms.time.value = time;
-      renderer.setRenderTarget(null); renderer.clear(); renderer.render(scene, camera);
+      // Keep raster structure visible when this texture is viewed on a smaller 3D screen.
+      material.uniforms.rasterSize.value.set(destination ? Math.min(target.width,640) : target.width, destination ? Math.min(target.height,360) : target.height);
+      material.uniforms.warming.value = powerTime !== null;
+      if (powerTime !== null) {
+        const ignition=crtPowerFrame(powerTime);
+        material.uniforms.ignition.value.set(ignition.width,ignition.height,ignition.opacity);
+      }
+      renderer.setRenderTarget(destination); renderer.clear(); renderer.render(scene, camera);
     },
     dispose() { target.dispose(); geometry.dispose(); material.dispose(); },
   };

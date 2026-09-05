@@ -65,3 +65,9 @@ Memory-card Browser layout follows the owner-supplied screenshot: gray gradient,
 ## CRT entrance casing
 
 `public/textures/crt-casing.png` is original generated artwork created with the built-in imagegen tool on 5 September 2026. It provides the textured casing and transparent screen opening; live content, glass reflections, power button, and shader are rendered by the site. No third-party television branding is included.
+
+## 3D bedroom and monitor
+
+The monitor and bedroom are original procedural Three.js geometry in `components/console/bedroomScene.ts`, including generated wood-grain and surface-bump textures. Reflections use Three.js’s bundled `RoomEnvironment`; no external model downloads or third-party bedroom imagery are used. The earlier imagegen casing remains the WebGL-failure fallback.
+
+The desk task lamp and exterior buildings are original procedural geometry. The nighttime sky is a procedural shader. The monitor now uses a cube capture of this room, replacing the earlier bundled RoomEnvironment reflection; no external HDRI or reflection image is used.

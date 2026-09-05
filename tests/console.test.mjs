@@ -94,3 +94,33 @@ test('CRT ignition opens a horizontal beam before expanding and settling to blac
   assert.equal(crtPowerFrame(CRT_POWER_DURATION).opacity, 0);
   assert.equal(crtPowerFrame(CRT_POWER_DURATION).height, 1);
 });
+
+test('bedroom camera starts front-on and enters the screen on desktop and mobile', async () => {
+  const { bedroomCameraFrame } = await import('../lib/console/bedroomCamera.ts');
+  for(const [width,height] of [[1440,900],[390,844],[844,390],[320,568],[2560,1080]]) {
+    const start=bedroomCameraFrame(width,height,0), aligned=bedroomCameraFrame(width,height,.65),end=bedroomCameraFrame(width,height,1);
+    assert.equal(start.x,0);assert.equal(start.y,.11);assert.ok(start.z>end.z);
+    assert.equal(aligned.x,0);assert.ok(Math.abs(aligned.y-.11)<1e-9);
+    assert.equal(aligned.handoff,0);assert.equal(end.handoff,1);
+    assert.ok(end.z>.72);
+    const projectedHeight=(end.z-.72)*Math.tan(Math.PI/9)*2;
+    // The camera reaches the glass before the composited fullscreen handoff ends.
+    assert.ok(projectedHeight<=2.25);
+    assert.ok(projectedHeight*width/height<=3);
+    let previous=start.z;
+    for(let p=0;p<=1;p+=.01){const frame=bedroomCameraFrame(width,height,p);assert.ok(frame.z<=previous);previous=frame.z;}
+  }
+});
+
+test('window light travels behind the monitor onto the bed, never across its face', async () => {
+  const { windowLightAtX, WINDOW_LIGHT } = await import('../lib/console/windowLight.ts');
+  for(const x of [-1.75,0,1.75]) {
+    const beam=windowLightAtX(x);
+    assert.ok(beam.z+WINDOW_LIGHT.halfSize.z < .48, 'entire beam is behind the monitor face');
+  }
+  const bed=windowLightAtX(3.6);
+  assert.ok(bed.z > -5.3 && bed.z < -2.5);
+  assert.ok(Math.abs(bed.y-(-1.08))<.15);
+  const window=windowLightAtX(WINDOW_LIGHT.origin.x);
+  assert.deepEqual(window,WINDOW_LIGHT.origin);
+});

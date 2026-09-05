@@ -1,0 +1,15 @@
+.lighting-dev { position:fixed; top:16px; right:16px; z-index:100; width:min(290px,calc(100vw - 32px)); color:#e5e7eb; font:13px/1.4 Arial,sans-serif; background:#14181ff5; border:1px solid #3b4350; border-radius:10px; box-shadow:0 10px 35px #0008; }
+.lighting-dev-toggle { width:100%; display:flex; justify-content:space-between; padding:12px 14px; font-weight:600; min-height:44px; }
+.lighting-dev-panel { padding:0 14px 14px; max-height:calc(100svh - 90px); overflow-y:auto; overscroll-behavior:contain; }
+.lighting-dev-panel p { font-size:12px; color:#a8b3c3; margin:0 0 12px; }
+.lighting-dev-slider { display:block; margin-bottom:10px; }
+.lighting-dev-slider > span { display:flex; justify-content:space-between; }
+.lighting-dev-slider output { color:#f3bf88; font-variant-numeric:tabular-nums; }
+.lighting-dev-slider input { display:block; width:100%; height:24px; accent-color:#dfa66b; cursor:ew-resize; }
+.lighting-dev-color { display:flex; align-items:center; justify-content:space-between; margin:12px 0; }
+.lighting-dev-color input { width:52px; height:32px; border:0; background:transparent; }
+.lighting-dev-actions { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:12px; }
+.lighting-dev-actions button { min-height:36px; background:#27303d; border-radius:5px; font-size:12px; }
+.lighting-dev-actions button:hover { background:#364357; }
+.lighting-dev-status { display:block; font-size:12px; }
+.lighting-dev textarea { width:100%; min-height:170px; margin-top:10px; font:12px/1.5 monospace; background:#090d13; color:#d6e2ef; padding:8px; border:1px solid #3b4350; }

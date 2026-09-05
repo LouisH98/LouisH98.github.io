@@ -19,6 +19,7 @@ export default function Console() {
   const [ready, setReady] = useState(false), [boot, setBoot] = useState(false), [elapsed, setElapsed] = useState(0);
   const [powered, setPowered] = useState(false);
   const powerState = useRef(false);
+  const powerButton = useRef<HTMLButtonElement>(null);
   const [changing, setChanging] = useState(false);
   const [settingIndex,setSettingIndex]=useState(0);
   const transition = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,7 +44,7 @@ export default function Console() {
     setReady(true);
     const unlock = (event?: Event) => {
       if (!powerState.current || !soundWanted.current || audioUnlocked.current || audioUnlocking.current) return;
-      if (event?.target instanceof Element && event.target.closest('[data-sound-toggle]')) return;
+      if (event?.target instanceof Element && event.target.closest('[data-sound-toggle], [data-dev-controls]')) return;
       audioUnlocking.current = true;
       void audio.current?.enable(!event).then(enabled => {
         audioUnlocking.current = false;
@@ -107,6 +108,7 @@ export default function Console() {
   }, [boot, route.view, finish]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (event.target instanceof Element && event.target.closest('[data-dev-controls]')) return;
       if (!powerState.current || event.altKey || event.ctrlKey || event.metaKey) return;
       if (event.key === 'Escape') { event.preventDefault(); if (optionsOpen) { setOptionsOpen(false); document.getElementById(`save-${projects[save].id}`)?.focus(); } else goBack(); return; }
       if (boot) return;
@@ -169,10 +171,10 @@ export default function Console() {
   }
   const project = projects.find(p => p.id === route.projectId) || projects[0];
   const title = route.view === 'browser' ? 'Browser' : route.view === 'about' ? 'About Me' : route.view === 'settings' ? 'System Configuration' : 'Memory Card (PS2) / 1';
-  return <CrtEntrance powered={powered} ready={ready} powerTime={warming ? elapsed + CRT_POWER_DURATION : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powerOn}><main ref={root} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
+  return <CrtEntrance fallback={failed} powerButton={powerButton} powered={powered} ready={ready} powerTime={warming ? elapsed + CRT_POWER_DURATION : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powerOn}><main ref={root} data-powered={powered} data-room={!powered || (boot && crtZoom(elapsed)<1)} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
     <h1 className="sr-only">Louis’s portfolio</h1>
     <div className="screen-haze" aria-hidden="true" />
-    {ready && powered && !failed && <Scene settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
+    {ready && !failed && <Scene powered={powered} powerButton={powerButton} settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
     <div className="transition-black" style={{ opacity: !reduced && !boot && changing ? 1 : 0 }} aria-hidden="true" />
     <header className="console-top"><button id="sound-control" data-sound-toggle className="sound-button" onClick={toggleSound} aria-pressed={sound} aria-busy={soundLoading} aria-label={sound ? 'Mute sound' : 'Enable sound'} title={sound ? 'Mute sound' : 'Enable sound'}>{sound ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}</button></header>
     {audioError && <output className="audio-status">{audioError}</output>}

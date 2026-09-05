@@ -271,3 +271,15 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .crt-ignition { position:absolute; inset:0; z-index:9; overflow:hidden; background:#010203; pointer-events:none; }
 .crt-phosphor { position:absolute; inset:0; border-radius:12%; background:radial-gradient(ellipse,#e8f5ff 0%,#cde7f6 32%,#709aaf 75%,#254554 100%); box-shadow:0 0 18px 5px #bce6ffb3,0 0 50px 10px #75c1ff66; transform-origin:center; will-change:transform,opacity; }
 @media(prefers-reduced-motion:reduce) { .crt-ignition { display:none; } }
+
+/* A single WebGL stage presents the bedroom, then hands off to the live portfolio. */
+.bedroom-stage { position:relative; width:100%; height:100svh; overflow:hidden; background:#090d15; }
+.bedroom-stage > .console { width:100%; height:100%; min-height:0; }
+.bedroom-stage .console[data-powered="false"] > :not(.scene):not(.sr-only) { visibility:hidden; }
+.bedroom-stage .console[data-room="true"] .screen-haze { visibility:hidden; }
+.bedroom-power { position:absolute; left:65%; top:65%; width:44px; height:44px; transform:translate(-50%,-50%); z-index:20; border-radius:50%; background:transparent; }
+.bedroom-power:enabled:hover { box-shadow:0 0 20px #e761382b; }
+.bedroom-power:focus-visible { outline:2px solid #f0c497; outline-offset:2px; box-shadow:0 0 18px #ffb26d45; }
+.bedroom-stage .console[data-room="true"] .console-top { top:auto; bottom:30px; right:30px; left:auto; }
+.bedroom-stage .console[data-room="true"] .boot-bottom { bottom:30px; left:30px; right:auto; }
+.bedroom-stage .console[data-room="true"] .scene { filter:none; opacity:1; }

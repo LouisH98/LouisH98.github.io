@@ -1,11 +1,14 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import { createSettingsSculpture } from './settingsSculpture';
 import { bootFrame, smooth } from '@/lib/console/timeline';
-import { crtZoom } from '@/lib/console/crt';
+import { crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
+import { subscribeLighting } from '@/lib/console/lighting';
+import { createLinearTarget } from './renderPipeline';
 import { createCrtShader } from './crtShader';
-type Props = { settingIndex?:number; boot: boolean; elapsed: number; reduced: boolean; view: string; onFailure: () => void };
+import { createBedroomScene } from './bedroomScene';
+type Props = { powered?: boolean; powerButton?: RefObject<HTMLButtonElement | null>; settingIndex?:number; boot: boolean; elapsed: number; reduced: boolean; view: string; onFailure: () => void };
 export default function Scene(props: Props) {
   const host = useRef<HTMLDivElement>(null);
   const state = useRef(props); state.current = props;
@@ -18,7 +21,16 @@ export default function Scene(props: Props) {
     renderer.setPixelRatio(1); renderer.setClearColor(0x000000, 0); renderer.autoClear = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace; container.appendChild(renderer.domElement);
     const sculpture=createSettingsSculpture();
-    const crt = createCrtShader();
+    const crt = createCrtShader(renderer);
+    renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap;
+    renderer.shadowMap.autoUpdate=false; renderer.shadowMap.needsUpdate=true;
+    const bedroom=createBedroomScene(renderer);
+    const televisionPicture=createLinearTarget(renderer);
+    const handoffScene=new THREE.Scene();
+    const handoffMaterial=new THREE.MeshBasicMaterial({map:televisionPicture.texture,transparent:true,depthTest:false,depthWrite:false});
+    const handoffGeometry=new THREE.PlaneGeometry(2,2);
+    const handoff=new THREE.Mesh(handoffGeometry,handoffMaterial);handoffScene.add(handoff);
+    const handoffCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
     const world = new THREE.Scene(), overlay = new THREE.Scene();
     world.fog = new THREE.FogExp2(0x111119, .019);
     const camera = new THREE.PerspectiveCamera(48, 1, .1, 160);
@@ -110,12 +122,15 @@ export default function Scene(props: Props) {
       titleTexture.needsUpdate = true;
     };
     drawTitle(); void document.fonts.load('44px "Console UI"').then(drawTitle).catch(() => {});
-    let width=1,height=1,portrait=false;
+    let width=1,height=1,portrait=false, roomDirty=true;
+    const unsubscribeLighting=subscribeLighting(()=>{roomDirty=true;});
     const resize=()=>{
       width=container.clientWidth; height=container.clientHeight; portrait=width/height<.85;
-      const resolution=Math.min(1,(width<650?480:720)/width);
+      const resolution=Math.min(1,(width<650?650:1440)/width);
       renderer.setSize(Math.round(width*resolution),Math.round(height*resolution),false);
       crt.resize(Math.round(width*resolution),Math.round(height*resolution));
+      televisionPicture.setSize(Math.round(width*resolution),Math.round(height*resolution));
+      roomDirty=true;
       camera.aspect=width/height; camera.updateProjectionMatrix();
       fadePlane.scale.x=camera.aspect;
       const titleWidth = Math.min(camera.aspect * 1.9, 2.8);
@@ -133,13 +148,22 @@ export default function Scene(props: Props) {
       frame=requestAnimationFrame(animate);
       const dt=Math.min((now-previous)/1000,.05); previous=now; if(document.hidden)return;
       const p=state.current;
+      if (p.powered === false && !roomDirty) return;
+      const roomActive=p.powered !== undefined && (!p.powered || (p.boot && crtZoom(p.elapsed)<1));
+      const roomProgress=p.powered && p.boot ? crtZoom(p.elapsed) : 0;
+      const powerTime=p.boot && p.elapsed<0 ? p.elapsed+CRT_POWER_DURATION : null;
+      const sourceAspect=roomActive?THREE.MathUtils.lerp(4/3,width/height,smooth((roomProgress-.65)/.35)):width/height;
+      camera.aspect=sourceAspect;camera.updateProjectionMatrix();
+      screenCamera.left=-sourceAspect;screenCamera.right=sourceAspect;screenCamera.updateProjectionMatrix();
+      fadePlane.scale.x=sourceAspect;
+      const textWidth=Math.min(sourceAspect*1.9,2.8);title.scale.set(textWidth,textWidth/8,1);
       if(p.reduced||(p.boot&&!wasBoot))histories.forEach(h=>{h.length=0;});
       wasBoot=p.boot;
       if(!p.reduced)time+=dt;
       const phase=bootFrame(p.elapsed), morph=p.boot?phase.morph:1;
-      const curvature = p.boot && !p.reduced ? 1 - crtZoom(p.elapsed) : 0;
+      const curvature = roomActive && p.boot && !p.reduced ? 1 - crtZoom(p.elapsed) : 0;
       title.visible = p.boot; titleMaterial.opacity = phase.title;
-      renderer.setRenderTarget(curvature > 0 ? crt.target : null);
+      renderer.setRenderTarget(roomActive || curvature > 0 ? crt.target : null);
       const menu=p.boot||p.view==='menu', settings=!p.boot&&p.view==='settings';
       settingsAmount=THREE.MathUtils.lerp(settingsAmount,settings?1:0,p.reduced?1:1-Math.exp(-dt*2));
       menuPlay=THREE.MathUtils.lerp(menuPlay,!p.boot&&p.view==='menu'&&!p.reduced?1:0,p.reduced?1:1-Math.exp(-dt*2));
@@ -205,12 +229,19 @@ export default function Scene(props: Props) {
       }
       if(settings&&settingsAmount>.001)sculpture.render(renderer,overlay,screenCamera);
       renderer.clearDepth(); renderer.render(overlay,screenCamera);
-      if (curvature > 0) crt.render(renderer, curvature, time);
+      if (roomActive) {
+        crt.render(renderer,curvature,time,televisionPicture,powerTime);
+        const anchor=bedroom.render(televisionPicture.texture,width,height,roomProgress,Boolean(p.powered),powerTime);
+        const button=p.powerButton?.current;
+        if(button){button.style.left=`${anchor.x}px`;button.style.top=`${anchor.y}px`;button.style.width=`${anchor.size}px`;button.style.height=`${anchor.size}px`;}
+        if(roomProgress>.82){handoffMaterial.opacity=smooth((roomProgress-.82)/.18);renderer.clearDepth();renderer.render(handoffScene,handoffCamera);}
+        roomDirty=false;
+      } else if (curvature > 0) crt.render(renderer, curvature, time);
     };
     frame=requestAnimationFrame(animate);
     const lost=(event:Event)=>{event.preventDefault();state.current.onFailure();}; renderer.domElement.addEventListener('webglcontextlost',lost);
     return()=>{
-      disposed = true; crt.dispose(); titleTexture.dispose(); titleMaterial.dispose(); titleGeometry.dispose();
+      disposed = true; unsubscribeLighting();bedroom.dispose();televisionPicture.dispose();handoffGeometry.dispose();handoffMaterial.dispose();crt.dispose(); titleTexture.dispose(); titleMaterial.dispose(); titleGeometry.dispose();
       cancelAnimationFrame(frame);observer.disconnect();renderer.domElement.removeEventListener('webglcontextlost',lost);
       sculpture.dispose();fadePlane.geometry.dispose();fadePlane.material.dispose();
       box.dispose();materials.forEach(m=>m.dispose());sprites.forEach(s=>s.material.dispose());cores.forEach(s=>s.material.dispose());trailMaterials.forEach(m=>m.dispose());haze.material.dispose();clouds.forEach(c=>c.material.dispose());cloudTexture.dispose();texture.dispose();renderer.dispose();renderer.domElement.remove();
