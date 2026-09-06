@@ -1,0 +1,285 @@
+{
+  "conditions": "Chrome headless, 1440x900 DPR1, fresh context/cache disabled, 10 Mbps down, 40ms latency, local uncompressed server; 3 runs",
+  "runs": [
+    {
+      "roomReady": 1605.2000000029802,
+      "paint": [
+        {
+          "name": "first-paint",
+          "start": 428
+        },
+        {
+          "name": "first-contentful-paint",
+          "start": 428
+        }
+      ],
+      "resources": [
+        {
+          "url": "/assets/index-BS6GFfqe.js",
+          "bytes": 1111190,
+          "duration": 1095.1000000089407
+        },
+        {
+          "url": "/assets/index-Di9RgokJ.css",
+          "bytes": 197376,
+          "duration": 359.20000000298023
+        },
+        {
+          "url": "/assets/console-ui-taLwv4MD.ttf",
+          "bytes": 92072,
+          "duration": 119.8999999910593
+        },
+        {
+          "url": "/textures/snowboarding-poster.png",
+          "bytes": 3486226,
+          "duration": 2848.9000000059605
+        },
+        {
+          "url": "/favicon.svg",
+          "bytes": 390,
+          "duration": 43.099999994039536
+        }
+      ],
+      "errors": []
+    },
+    {
+      "roomReady": 1573.5999999940395,
+      "paint": [
+        {
+          "name": "first-paint",
+          "start": 432
+        },
+        {
+          "name": "first-contentful-paint",
+          "start": 432
+        }
+      ],
+      "resources": [
+        {
+          "url": "/assets/index-BS6GFfqe.js",
+          "bytes": 1111190,
+          "duration": 1096.5
+        },
+        {
+          "url": "/assets/index-Di9RgokJ.css",
+          "bytes": 197376,
+          "duration": 359.29999999701977
+        },
+        {
+          "url": "/assets/console-ui-taLwv4MD.ttf",
+          "bytes": 92072,
+          "duration": 119.09999999403954
+        },
+        {
+          "url": "/textures/snowboarding-poster.png",
+          "bytes": 3486226,
+          "duration": 2834.5999999940395
+        },
+        {
+          "url": "/favicon.svg",
+          "bytes": 390,
+          "duration": 41.79999999701977
+        }
+      ],
+      "errors": []
+    },
+    {
+      "roomReady": 1577.0999999940395,
+      "paint": [
+        {
+          "name": "first-paint",
+          "start": 420
+        },
+        {
+          "name": "first-contentful-paint",
+          "start": 420
+        }
+      ],
+      "resources": [
+        {
+          "url": "/assets/index-BS6GFfqe.js",
+          "bytes": 1111190,
+          "duration": 1093
+        },
+        {
+          "url": "/assets/index-Di9RgokJ.css",
+          "bytes": 197376,
+          "duration": 355.80000001192093
+        },
+        {
+          "url": "/assets/console-ui-taLwv4MD.ttf",
+          "bytes": 92072,
+          "duration": 118.29999999701977
+        },
+        {
+          "url": "/textures/snowboarding-poster.png",
+          "bytes": 3486226,
+          "duration": 2859.9000000059605
+        },
+        {
+          "url": "/favicon.svg",
+          "bytes": 390,
+          "duration": 42.70000000298023
+        }
+      ],
+      "errors": []
+    }
+  ],
+  "files": [
+    {
+      "path": "dist/client/assets/console-ui-taLwv4MD.ttf",
+      "bytes": 92072,
+      "gzip": 49318
+    },
+    {
+      "path": "dist/client/assets/index-BS6GFfqe.js",
+      "bytes": 1111190,
+      "gzip": 341138
+    },
+    {
+      "path": "dist/client/assets/index-Di9RgokJ.css",
+      "bytes": 197376,
+      "gzip": 32718
+    },
+    {
+      "path": "dist/client/audio/ambience.wav",
+      "bytes": 1763848,
+      "gzip": 1709802
+    },
+    {
+      "path": "dist/client/audio/cancel.wav",
+      "bytes": 34682,
+      "gzip": 30435
+    },
+    {
+      "path": "dist/client/audio/confirm.wav",
+      "bytes": 34682,
+      "gzip": 30435
+    },
+    {
+      "path": "dist/client/audio/cursor.wav",
+      "bytes": 3602,
+      "gzip": 3523
+    },
+    {
+      "path": "dist/client/audio/save-select.wav",
+      "bytes": 34682,
+      "gzip": 30434
+    },
+    {
+      "path": "dist/client/audio/setting.wav",
+      "bytes": 16538,
+      "gzip": 15573
+    },
+    {
+      "path": "dist/client/audio/startup-reference.wav",
+      "bytes": 2115666,
+      "gzip": 1709973
+    },
+    {
+      "path": "dist/client/favicon.svg",
+      "bytes": 390,
+      "gzip": 189
+    },
+    {
+      "path": "dist/client/font-license.txt",
+      "bytes": 17985,
+      "gzip": 6846
+    },
+    {
+      "path": "dist/client/index.html",
+      "bytes": 2984,
+      "gzip": 1386
+    },
+    {
+      "path": "dist/client/project-images/loveprint/drawing-and-message.png",
+      "bytes": 28713,
+      "gzip": 26743
+    },
+    {
+      "path": "dist/client/project-images/loveprint/drawing.png",
+      "bytes": 38359,
+      "gzip": 37030
+    },
+    {
+      "path": "dist/client/project-images/loveprint/history.png",
+      "bytes": 48834,
+      "gzip": 46538
+    },
+    {
+      "path": "dist/client/project-images/loveprint.png",
+      "bytes": 21451,
+      "gzip": 21015
+    },
+    {
+      "path": "dist/client/project-images/print-scheduler/Dashboard.png",
+      "bytes": 354461,
+      "gzip": 297953
+    },
+    {
+      "path": "dist/client/project-images/print-scheduler/Schedule.png",
+      "bytes": 145651,
+      "gzip": 103547
+    },
+    {
+      "path": "dist/client/project-images/print-scheduler/component-preview.png",
+      "bytes": 345540,
+      "gzip": 270912
+    },
+    {
+      "path": "dist/client/project-images/print-scheduler/full-walkthrough.mp4",
+      "bytes": 305621,
+      "gzip": 299416
+    },
+    {
+      "path": "dist/client/project-images/print-scheduler/full-walkthrough.png",
+      "bytes": 120083,
+      "gzip": 108573
+    },
+    {
+      "path": "dist/client/project-images/the-screen/game-of-life.mp4",
+      "bytes": 904545,
+      "gzip": 903789
+    },
+    {
+      "path": "dist/client/project-images/the-screen/game-of-life.png",
+      "bytes": 415932,
+      "gzip": 416061
+    },
+    {
+      "path": "dist/client/project-images/the-screen/matrix.mp4",
+      "bytes": 363963,
+      "gzip": 363204
+    },
+    {
+      "path": "dist/client/project-images/the-screen/matrix.png",
+      "bytes": 216730,
+      "gzip": 214115
+    },
+    {
+      "path": "dist/client/project-images/the-screen/pong.mp4",
+      "bytes": 322063,
+      "gzip": 321045
+    },
+    {
+      "path": "dist/client/project-images/the-screen/pong.png",
+      "bytes": 106743,
+      "gzip": 103838
+    },
+    {
+      "path": "dist/client/textures/crt-casing.png",
+      "bytes": 1101530,
+      "gzip": 1080694
+    },
+    {
+      "path": "dist/client/textures/snowboarding-poster.png",
+      "bytes": 3486226,
+      "gzip": 3425902
+    },
+    {
+      "path": "dist/client/textures/snowboarding-poster.prompt.txt",
+      "bytes": 851,
+      "gzip": 523
+    }
+  ]
+}

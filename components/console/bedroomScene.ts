@@ -74,7 +74,7 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
   endItem('Bed',false);
   beginItem();
   // Matte snowboarding print above the bed, with a slim dark frame.
-  const posterTexture=new THREE.TextureLoader().load(asset('textures/snowboarding-poster.png'),()=>{
+  const posterTexture=new THREE.TextureLoader().load(asset('textures/snowboarding-poster.webp'),()=>{
     if(disposed){posterTexture.dispose();return;}
     refreshLightingReflection();
   });
@@ -237,7 +237,9 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
   RectAreaLightUniformsLib.init();
   const screenLightSampler=createScreenLightSampler(renderer);
   const screenLight=new THREE.RectAreaLight('#709eff',0,2.9,2.15);
-  screenLight.position.set(0,.1,1.1);screenLight.rotation.y=Math.PI;room.add(screenLight);
+  // Just beyond the convex glass: the console and controller must be in front
+  // of the emitting plane. A slight downward tilt catches their top surfaces.
+  screenLight.position.set(0,.1,.84);screenLight.rotation.set(.18,Math.PI,0);room.add(screenLight);
   beginItem();
   // A shaded task lamp directs a warm pool at the console, rather than lighting the whole room.
   const deskLampMat=mat('#34433f',.34,.55);
@@ -363,9 +365,12 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
     const offset=new THREE.Vector3(...(LAYOUT_DEFAULTS[item.name]??[0,0,0]));
     item.objects.forEach(object=>object.position.add(offset));
   }
+  for(const material of materials){
+    if(material instanceof THREE.MeshStandardMaterial)screenLightSampler.configureMaterial(material);
+  }
   room.updateMatrixWorld(true);
   applyLighting();captureReflection();
-  if(import.meta.env.DEV)void import('./layoutEditor').then(({createLayoutEditor})=>{
+  if(import.meta.env.DEV&&new URLSearchParams(location.search).has('devControls'))void import('./layoutEditor').then(({createLayoutEditor})=>{
     if(disposed)return;
     editor=createLayoutEditor(renderer,room,camera,layoutItems,invalidate,refreshLightingReflection);
     invalidate();

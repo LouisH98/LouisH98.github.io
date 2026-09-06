@@ -53,7 +53,7 @@ test('all project media, including reduced-motion stills, are local and present'
     for(const path of [project.image,...project.sections.map(s=>s.image).filter(Boolean)]) {
       assert.ok(!path.startsWith('http'));
       await access(`public/${path}`);
-      if(/\.mp4$/i.test(path)) await access(`public/${path.replace(/\.mp4$/i,'.png')}`);
+      if(/\.mp4$/i.test(path)) await access(`public/${path.replace(/\.mp4$/i,'.webp')}`);
     }
   }
 });

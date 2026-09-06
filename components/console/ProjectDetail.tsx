@@ -21,7 +21,7 @@ function Media({ src, alt, reduced }: { src: string; alt: string; reduced: boole
     return () => { observer.disconnect(); document.removeEventListener('visibilitychange', update); element.pause(); };
   }, [showVideo]);
   if (failed) return <p className="media-error">Image unavailable: {alt}</p>;
-  const poster = animated ? src.replace(/\.mp4$/i, '.png') : src;
+  const poster = animated ? src.replace(/\.mp4$/i, '.webp') : src;
   return <figure className={`project-media ${src.includes('the-screen') ? 'pixel-media' : ''}`}>
     {showVideo ? <video ref={video} src={asset(src)} poster={asset(poster)} muted loop playsInline preload="none" aria-label={alt} onError={() => setFailed(true)} /> : <img src={asset(poster)} alt={alt} loading="lazy" onError={() => setFailed(true)} />}
     {animated && reduced && <button className="text-action" onClick={() => setPlay(!play)}>{play ? 'Pause animation' : 'Play animation'}</button>}

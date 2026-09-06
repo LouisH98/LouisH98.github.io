@@ -31,7 +31,7 @@ export default function CrtEntrance({ fallback, powerButton, children, powered, 
         {!powered && <div className="crt-dark-glass" aria-hidden="true" />}
         <div className="crt-glass" aria-hidden="true" />
       </div>
-      <img className="crt-casing" src={asset('textures/crt-casing.png')} alt="" aria-hidden="true" draggable={false} />
+      <img className="crt-casing" src={asset('textures/crt-casing.webp')} alt="" aria-hidden="true" draggable={false} />
       <div className="crt-chin" aria-hidden={powered}>
         <div className="crt-power-group">
           {!powered && <span className="crt-power-label" id="crt-power-hint">POWER</span>}
