@@ -389,3 +389,21 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
     bottom:max(17%,calc(136px + env(safe-area-inset-bottom)));
   }
 }
+
+/* Keep intro controls in fixed, separate corners throughout the camera move. */
+.bedroom-stage .console.is-booting .console-top {
+  top:max(20px,env(safe-area-inset-top)); right:max(20px,env(safe-area-inset-right));
+  bottom:auto; left:auto;
+}
+.bedroom-stage .console.is-booting .boot-bottom {
+  bottom:max(20px,env(safe-area-inset-bottom)); left:max(20px,env(safe-area-inset-left));
+  right:auto; justify-content:flex-start;
+}
+
+.project-detail {
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+  background:rgba(8,10,22,.38);
+  border-radius:10px;
+  padding:clamp(14px,2.5vw,28px);
+}
