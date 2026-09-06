@@ -5,8 +5,8 @@ import { crtLayout, crtPowerFrame } from '@/lib/console/crt';
 import { asset } from '@/lib/console/assets';
 import { smooth } from '@/lib/console/timeline';
 
-type Props = { fallback: boolean; powerButton: RefObject<HTMLButtonElement | null>; children: ReactNode; powered: boolean; ready: boolean; powerTime: number | null; progress: number; onPower: () => void };
-export default function CrtEntrance({ fallback, powerButton, children, powered, ready, powerTime, progress, onPower }: Props) {
+type Props = { canPowerOff?:boolean; shutting?:boolean; fallback: boolean; powerButton: RefObject<HTMLButtonElement | null>; children: ReactNode; powered: boolean; ready: boolean; powerTime: number | null; progress: number; onPower: () => void };
+export default function CrtEntrance({ canPowerOff=false, shutting=false, fallback, powerButton, children, powered, ready, powerTime, progress, onPower }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   useLayoutEffect(() => {
@@ -20,9 +20,9 @@ export default function CrtEntrance({ fallback, powerButton, children, powered, 
   const full = progress >= 1;
   const ignition = powerTime === null ? null : crtPowerFrame(powerTime);
   const style = { ...(size ? crtLayout(size.width, size.height, progress) : {}), '--crt-presence': 1 - progress, '--crt-casing-opacity': 1 - smooth((progress - .65) / .35) } as CSSProperties;
-  if (!fallback) return <div ref={stage} className="bedroom-stage" data-powered={powered}>
+  if (!fallback) return <div ref={stage} className="bedroom-stage" data-powered={powered} data-can-power-off={canPowerOff}>
     {children}
-    <button ref={powerButton} className="bedroom-power" onClick={onPower} disabled={!ready} tabIndex={powered ? -1 : 0} aria-hidden={powered} aria-label="Power on CRT monitor" title="Power on"><span className="bedroom-power-label" aria-hidden="true"><Power size={16} strokeWidth={2}/></span><span className="bedroom-power-mobile" aria-hidden="true"><span className="ps2-reset">RESET<span><Power size={14} strokeWidth={2}/></span></span><span className="ps2-power-symbol">I / <Power size={26} strokeWidth={2.3}/><span className="ps2-standby-led"/></span></span></button>
+    <button ref={powerButton} className="bedroom-power" onClick={onPower} disabled={!ready||shutting} tabIndex={powered&&!canPowerOff ? -1 : 0} aria-hidden={powered&&!canPowerOff} aria-label={powered?"Power off CRT monitor":"Power on CRT monitor"}><span className="bedroom-power-label" aria-hidden="true"><Power size={16} strokeWidth={2}/></span><span className="bedroom-power-mobile" aria-hidden="true"><span className="ps2-reset">RESET<span><Power size={14} strokeWidth={2}/></span></span><span className="ps2-power-symbol">I / <Power size={26} strokeWidth={2.3}/><span className="ps2-standby-led"/></span></span></button>
   </div>;
   return <div ref={stage} className="crt-stage" data-power={powered ? 'on' : 'off'} data-fullscreen={full} data-warming={ignition !== null}>
     <div className="crt-set" style={style}>

@@ -319,10 +319,11 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
   const probe=new THREE.CubeCamera(.05,45,reflectionTarget);probe.position.set(0,.11,.83);
   let reflectionRevision=getReflectionRevision();
   let environment:THREE.WebGLRenderTarget|undefined;
+  let deskOn=true, bedsideOn=true;
   function applyLighting(){
     const p=getLighting();
     ambient.intensity=p.ambient;fill.intensity=p.fill;room.environmentIntensity=p.environment;
-    lamp.intensity=p.bedside;taskLight.intensity=p.desk;moon.intensity=p.window;
+    lamp.intensity=bedsideOn?p.bedside:0;taskLight.intensity=deskOn?p.desk:0;moon.intensity=p.window;
     // UI shows the full cone width; Three.js uses its half-angle in radians.
     const beamAngle=THREE.MathUtils.degToRad(p.deskBeamAngle/2);
     if(taskLight.angle!==beamAngle){taskLight.angle=beamAngle;renderer.shadowMap.needsUpdate=true;}
@@ -330,12 +331,12 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
     dustMaterial.uniforms.lampInner.value=Math.cos(beamAngle*(1-taskLight.penumbra));
     lamp.color.set(p.lampColor);taskLight.color.set(p.lampColor);
     dustMaterial.uniforms.lampColor.value.set(p.lampColor);
-    dustMaterial.uniforms.lampStrength.value=p.desk/17.3;
+    dustMaterial.uniforms.lampStrength.value=deskOn?p.desk/17.3:0;
     const bounceColor=p.lampColor===LIGHTING_DEFAULTS.lampColor?lampBounceColor:p.lampColor;
     warmBounce.color.set(bounceColor);
-    warmBounce.intensity=p.bedside/6*.8;
-    diffuserMaterial.color.set(p.lampColor).multiplyScalar(2.4*p.desk/17.6);
-    shadeMat.emissive.set(p.lampColor===LIGHTING_DEFAULTS.lampColor?'#ef923b':p.lampColor);shadeMat.emissiveIntensity=.35*p.bedside/6;
+    warmBounce.intensity=bedsideOn?p.bedside/6*.8:0;
+    diffuserMaterial.color.set(p.lampColor).multiplyScalar(deskOn?2.4*p.desk/17.6:0);
+    shadeMat.emissive.set(p.lampColor===LIGHTING_DEFAULTS.lampColor?'#ef923b':p.lampColor);shadeMat.emissiveIntensity=bedsideOn?.35*p.bedside/6:0;
     screenMaterial.envMapIntensity=p.reflection;screenMaterial.roughness=p.glassRoughness;screenMaterial.clearcoatRoughness=p.clearcoatRoughness;
   }
   function captureReflection(){
@@ -365,6 +366,85 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
     const offset=new THREE.Vector3(...(LAYOUT_DEFAULTS[item.name]??[0,0,0]));
     item.objects.forEach(object=>object.position.add(offset));
   }
+  // Keep the cup and its contents together around a local pivot after layout offsets.
+  const cup=new THREE.Group();cup.position.copy(mug.position);room.add(cup);
+  for(const part of [mug,coffee,handle])cup.attach(part);
+  const cupRest=cup.position.clone();
+  const puddleMaterial=mat('#251308',.16);
+  const puddle=new THREE.Mesh(new THREE.CircleGeometry(1,48),puddleMaterial);
+  const floorY=-2.17;
+  puddle.rotation.x=-Math.PI/2;puddle.visible=false;room.add(puddle);
+  // Curved ceramic pieces retain the cup's wall shape rather than becoming cubes.
+  const shards=Array.from({length:20},(_,i)=>{
+    const geometry=i<16
+      ?new THREE.CylinderGeometry(.17,.15,.1,4,1,true,(i%8)*Math.PI/4,Math.PI/4*.92)
+      :new THREE.TorusGeometry(.12,.033,5,6,Math.PI/2);
+    const mesh=new THREE.Mesh(geometry,ceramic);mesh.visible=false;mesh.castShadow=true;mesh.receiveShadow=true;room.add(mesh);
+    return {mesh,velocity:new THREE.Vector3(),spin:new THREE.Vector3()};
+  });
+  let cupState:'rest'|'falling'|'broken'='rest',debrisTime=0;
+  const velocity=new THREE.Vector3(1.9,.15,.65);
+  const interactionPoint=new THREE.Vector3();
+  function smash(){
+    cupState='broken';cup.visible=false;debrisTime=0;
+    puddle.position.set(cup.position.x,floorY+.006,cup.position.z);
+    puddle.scale.set(.4,.28,1);puddle.visible=true;
+    shards.forEach((shard,i)=>{
+      const angle=i*2.39996323,speed=.45+(i%5)*.19;
+      shard.mesh.visible=true;shard.mesh.position.copy(cup.position);
+      shard.mesh.position.y=floorY+.11+(i%3)*.025;
+      shard.mesh.rotation.set(i*.7,i*1.3,i*.4);
+      shard.velocity.set(Math.cos(angle)*speed+.45,.6+(i%4)*.24,Math.sin(angle)*speed);
+      shard.spin.set(3+i%4,2-i%5,4-i%3);
+    });
+  }
+  function interact(id:string){
+    if(id==='desk')deskOn=!deskOn;
+    if(id==='bedside')bedsideOn=!bedsideOn;
+    if(id==='coffee'&&cupState==='rest')cupState='falling';
+    applyLighting();renderer.shadowMap.needsUpdate=true;
+    if(id!=='coffee')captureReflection();
+    invalidate();
+  }
+  function stepCoffee(dt:number){
+    if(cupState==='falling'){
+      // Slide across the desktop, then lose support at its right edge.
+      const supported=cup.position.x<3.3;
+      if(!supported)velocity.y-=9.81*dt;
+      cup.position.addScaledVector(velocity,dt);
+      if(supported){cup.position.y=cupRest.y;velocity.y=0;}
+      cup.rotation.z-=dt*(supported?1.1:5.5);cup.rotation.x+=dt*1.7;
+      coffee.visible=cup.rotation.z>-.5;
+      if(cup.position.y<=floorY+.16)smash();
+    }else if(cupState==='broken'&&debrisTime<3){
+      debrisTime+=dt;
+      for(const shard of shards){
+        shard.velocity.y-=9.81*dt;
+        shard.mesh.position.addScaledVector(shard.velocity,dt);
+        shard.mesh.rotation.x+=shard.spin.x*dt;shard.mesh.rotation.y+=shard.spin.y*dt;shard.mesh.rotation.z+=shard.spin.z*dt;
+        if(shard.mesh.position.y<floorY+.045){
+          shard.mesh.position.y=floorY+.045;
+          shard.velocity.y=Math.abs(shard.velocity.y)>.35?-shard.velocity.y*.26:0;
+          shard.velocity.x*=Math.exp(-dt*18);shard.velocity.z*=Math.exp(-dt*18);shard.spin.multiplyScalar(Math.exp(-dt*20));
+        }
+      }
+    }
+  }
+  function updateInteractions(dt:number,reduced:boolean){
+    if(cupState==='rest'||(cupState==='broken'&&debrisTime>=3))return;
+    // Fixed-size substeps keep collision and bounce stable across frame rates.
+    let remaining=reduced?4:Math.min(dt,.05);
+    while(remaining>0){const step=Math.min(remaining,1/120);stepCoffee(step);remaining-=step;}
+    renderer.shadowMap.needsUpdate=true;invalidate();
+  }
+  function interactionAnchors(width:number,height:number){
+    return [{id:'desk',object:taskShade,label:deskOn?'Turn desk lamp off':'Turn desk lamp on'},
+      {id:'bedside',object:shade,label:bedsideOn?'Turn bedside lamp off':'Turn bedside lamp on'},
+      {id:'coffee',object:cup,label:'Knock coffee off desk'}].map(item=>{
+        item.object.getWorldPosition(interactionPoint);interactionPoint.project(camera);
+        return {id:item.id,label:item.label,available:item.id!=='coffee'||cupState==='rest',x:(interactionPoint.x+1)*width/2,y:(1-interactionPoint.y)*height/2};
+      });
+  }
   for(const material of materials){
     if(material instanceof THREE.MeshStandardMaterial)screenLightSampler.configureMaterial(material);
   }
@@ -378,19 +458,24 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
   const anchor=new THREE.Vector3(),edge=new THREE.Vector3();
   const target=new THREE.Vector3(0,.11,.72);
   return {
+    interact, updateInteractions, interactionAnchors,
     powerLightAnimating(){return performance.now()-ledTransitionStart<100;},
     setPowerHovered(value:boolean){if(powerHovered!==value){powerHovered=value;ledFrom=ledStrength;ledTo=value?2:1;ledTransitionStart=performance.now();invalidate();}},
     setEditingAvailable(value:boolean){editor?.setAvailable(value);},
-    render(picture:THREE.Texture, width:number,height:number,progress:number,powered:boolean,time=0) {
+    render(picture:THREE.Texture, width:number,height:number,progress:number,powered:boolean,time=0,returning=false,pullback=0,shutting=false) {
       dustMaterial.uniforms.time.value=time;
       dustMaterial.uniforms.pixelRatio.value=renderer.getDrawingBufferSize(new THREE.Vector2()).y/height;
       placePoster(width,height);
       applyLighting();
       if(reflectionRevision!==getReflectionRevision()){captureReflection();reflectionRevision=getReflectionRevision();}
       camera.aspect=width/height;
-      const frame=bedroomCameraFrame(width,height,progress);
+      const frame=bedroomCameraFrame(width,height,progress,returning);
+      if(pullback>0){
+        const rest=bedroomCameraFrame(width,height,0);
+        frame.y=THREE.MathUtils.lerp(frame.y,rest.y,pullback);frame.z=THREE.MathUtils.lerp(frame.z,rest.z,pullback);
+      }
       camera.position.set(frame.x,frame.y,frame.z);
-      camera.lookAt(target);camera.updateProjectionMatrix();camera.updateMatrixWorld();
+      camera.lookAt(returning?new THREE.Vector3(0,frame.y,.72):target);camera.updateProjectionMatrix();camera.updateMatrixWorld();
       // The same glass/raster grows to match the viewport. No second image or
       // black-backed crossfade can dim or duplicate the particles during zoom.
       const takeover=frame.handoff;
@@ -411,7 +496,7 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
       screenMaterial.emissiveMap=picture;
       screenMaterial.emissiveIntensity=powered?getLighting().screen:0;
       screenMaterial.color.set(powered?'#000000':'#080e13');
-      ledMaterial.emissive.set(powered?'#9ee863':'#ff3b24');
+      ledMaterial.emissive.set(powered&&!shutting?'#9ee863':'#ff3b24');
       const ledProgress=Math.min(1,(performance.now()-ledTransitionStart)/100);
       ledStrength=powered?1:THREE.MathUtils.lerp(ledFrom,ledTo,ledProgress*ledProgress*(3-2*ledProgress));
       ledMaterial.emissiveIntensity=ledStrength;
@@ -419,7 +504,17 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
       screenLightSampler.update(picture,screenLight,powered,getLighting().screen);
       renderer.setRenderTarget(null);renderer.setClearColor('#090d15',1);atmosphere.render(renderer,room,camera,taskLight,progress,time,picture);
       anchor.copy(powerPosition).project(camera);edge.copy(powerPosition).add(new THREE.Vector3(.11,0,0)).project(camera);
-      return { x:(anchor.x+1)*width/2,y:(1-anchor.y)*height/2,size:Math.max(44,Math.abs(edge.x-anchor.x)*width) };
+      // Match the accessible DOM menu to the screen plane through the camera transition.
+      screenGeometry.computeBoundingBox();
+      const bounds=screenGeometry.boundingBox!;
+      const topLeft=new THREE.Vector3(bounds.min.x,bounds.max.y,0).add(screen.position).project(camera);
+      const bottomRight=new THREE.Vector3(bounds.max.x,bounds.min.y,0).add(screen.position).project(camera);
+      const screenBlend=THREE.MathUtils.smoothstep(progress,.82,1);
+      const sx=(topLeft.x+1)*width/2,sy=(1-topLeft.y)*height/2;
+      return { x:(anchor.x+1)*width/2,y:(1-anchor.y)*height/2,size:Math.max(44,Math.abs(edge.x-anchor.x)*width),
+        screen:{x:THREE.MathUtils.lerp(sx,0,screenBlend),y:THREE.MathUtils.lerp(sy,0,screenBlend),
+          width:THREE.MathUtils.lerp((bottomRight.x-topLeft.x)*width/2,width,screenBlend),
+          height:THREE.MathUtils.lerp((topLeft.y-bottomRight.y)*height/2,height,screenBlend)}};
     },
     dispose() {
       disposed=true;screenLightSampler.dispose();editor?.dispose();posterTexture.dispose();

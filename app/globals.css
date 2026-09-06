@@ -280,7 +280,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 /* A single WebGL stage presents the bedroom, then hands off to the live portfolio. */
 .bedroom-stage { position:relative; width:100%; height:100svh; overflow:hidden; background:#090d15; }
 .bedroom-stage > .console { width:100%; height:100%; min-height:0; }
-.bedroom-stage .console[data-powered="false"] > :not(.scene):not(.sr-only) { visibility:hidden; }
+.bedroom-stage .console[data-powered="false"] > :not(.scene):not(.sr-only):not(.room-controls):not(.return-room) { visibility:hidden; }
 .bedroom-stage .console .screen-haze { opacity:var(--fullscreen-blend,0); }
 .bedroom-power { position:absolute; left:65%; top:65%; width:44px; height:44px; transform:translate(-50%,-50%); z-index:20; border-radius:50%; background:transparent; }
 
@@ -340,3 +340,22 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 @media (max-width:700px) {
   .view-menu .screen-haze:after { display:none; }
 }
+
+/* Invisible object hit areas; only keyboard focus reveals an outline. */
+.room-controls { position:absolute; inset:0; z-index:6; pointer-events:none; }
+.room-controls[hidden],.room-object[hidden] { display:none; }
+.room-object { position:absolute; transform:translate(-50%,-50%); width:48px; height:48px; border:0; border-radius:50%; background:transparent; color:transparent; cursor:pointer; pointer-events:auto; padding:0; }
+.room-object:focus-visible { outline:1px solid #efd8af99; outline-offset:3px; }
+
+.screen-surface { position:absolute; inset:0; transform-origin:0 0; pointer-events:none; }
+.screen-surface .screen-content { pointer-events:auto; }
+.return-room { position:absolute; bottom:30px; right:30px; z-index:8; cursor:pointer; }
+
+.bedroom-stage .console[data-room="true"] .console-top { left:30px; right:auto; }
+
+.bedroom-stage[data-can-power-off="true"] .bedroom-power { opacity:1; visibility:visible; pointer-events:auto; }
+.console[data-shutting="true"] .screen-surface { pointer-events:none; }
+.console[data-shutting="true"] .screen-content { pointer-events:none; transition:none; animation:none; transform-origin:50% 50%; }
+.console[data-shutting="true"] .console-top { visibility:hidden; }
+
+.return-room:disabled { opacity:.22; cursor:default; background:transparent; }

@@ -1,8 +1,8 @@
 import { asset } from './assets';
 type Cue = 'move' | 'enter' | 'back' | 'save' | 'setting';
 type Frame = { boot: boolean; elapsed: number };
-const paths = { boot: 'audio/startup-reference.wav', ambience: 'audio/ambience.wav', move: 'audio/cursor.wav', enter: 'audio/confirm.wav', back: 'audio/cancel.wav', save: 'audio/save-select.wav', setting: 'audio/setting.wav' };
-/** All sounds are recorded PS2 samples. No synthesized substitute. */
+const paths = { shutdown:'audio/crt-shutdown.mp3', boot: 'audio/startup-reference.wav', ambience: 'audio/ambience.wav', move: 'audio/cursor.wav', enter: 'audio/confirm.wav', back: 'audio/cancel.wav', save: 'audio/save-select.wav', setting: 'audio/setting.wav' };
+/** Recorded PS2 interface sounds plus a recorded CRT power-down effect. */
 export class ConsoleAudio {
   private context?: AudioContext;
   private buffers = new Map<string, AudioBuffer>();
@@ -15,6 +15,8 @@ export class ConsoleAudio {
   private mode?: 'boot' | 'ambience';
   constructor(private frame: () => Frame, private report: (message: string) => void) {}
   async enable(automatic = false) {
+    for (const effect of this.effects) { try { effect.stop(); } catch {} }
+    this.effects.clear();
     const revision = ++this.revision;
     try {
       this.context ??= new AudioContext();
@@ -42,6 +44,12 @@ export class ConsoleAudio {
     for (const effect of this.effects) { try { effect.stop(); } catch {} }
     this.effects.clear();
   }
+  shutdown() {
+    const audible=this.enabled&&!document.hidden;
+    this.disable();
+    // Cut the menu immediately but let the final hardware sound finish on its own.
+    if(audible)this.playEffect('shutdown');
+  }
   private stopBackground() { try { this.background?.stop(); } catch {} this.background = undefined; this.mode = undefined; }
   sync(force = false) {
     if (!this.enabled || !this.context || document.hidden) return;
@@ -62,14 +70,18 @@ export class ConsoleAudio {
   cue(cue: Cue) {
     if (this.frame().boot && this.frame().elapsed < 0) return;
     if (!this.enabled || !this.context || document.hidden) return;
+    this.playEffect(cue);
+  }
+  private playEffect(cue: Cue|'shutdown') {
+    if(!this.context)return;
     const buffer = this.buffers.get(cue); if (!buffer) return;
     const source = this.context.createBufferSource(), gain = this.context.createGain();
-    source.buffer = buffer; gain.gain.value = .14;
+    source.buffer = buffer; gain.gain.value = cue==='shutdown'?.2:.14;
     source.connect(gain); gain.connect(this.context.destination); this.effects.add(source);
     source.onended = () => { this.effects.delete(source); source.disconnect(); gain.disconnect(); }; source.start();
   }
   visibility() {
-    if (document.hidden) { this.stopBackground(); void this.context?.suspend().catch(() => {}); }
+    if (document.hidden) { if(!this.enabled)this.disable();this.stopBackground(); void this.context?.suspend().catch(() => {}); }
     else if (this.enabled) { void this.context?.resume().then(() => this.sync(true)).catch(() => {}); }
   }
   dispose() { this.disposed = true; this.disable(); void this.context?.close().catch(() => {}); }

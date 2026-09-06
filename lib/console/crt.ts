@@ -40,3 +40,14 @@ export function crtLayout(width: number, height: number, progress: number) {
     height: mix(initialHeight, finalHeight),
   };
 }
+
+/** Collapse to a beam, then let the concentrated phosphor decay before pulling back. */
+export const CRT_SHUTDOWN_DURATION=2.7;
+export function crtPowerOffFrame(seconds:number){
+  return {
+    width:1-.994*smooth((seconds-.35)/.25),
+    height:1-.996*smooth(seconds/.35),
+    opacity:seconds<.6?1:Math.exp(-(seconds-.6)*5)*(1-smooth((seconds-1.25)/.25)),
+    pullback:smooth((seconds-1.5)/1.2),
+  };
+}

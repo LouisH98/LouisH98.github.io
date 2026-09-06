@@ -35,6 +35,10 @@ The workflow in `.github/workflows/pages.yml` builds and publishes on pushes to 
 
 ## Content and behavior
 
+- In the returned room view, the TV power button switches it off: the raster collapses to a beam and lingering phosphor dot, then the camera returns to the opening position. Powering on again starts the intro; room objects retain their state.
+- The persistent fullscreen icon toggle zooms out to a closer bedroom view. Menus and project pages remain interactive on the TV; the same toggle returns to fullscreen.
+- Before powering on the TV, click either lamp to toggle it. Click the coffee mug once to knock it off the desk. It tumbles under gravity and breaks into bouncing ceramic fragments on the floor; there is no reset interaction. Interactions are unmarked; keyboard focus exposes accessible controls. Reduced motion applies the changes immediately.
+
 - Edit biography and typed project records in `lib/console/content.ts`.
 - Hash routes: `#/`, `#/browser`, `#/about`, `#/settings`, and `#/project/<id>`.
 - Arrow keys select items; Enter opens them; Escape or Back returns to the parent screen. Tab reaches all controls and links. Touch needs a single tap to open a save.

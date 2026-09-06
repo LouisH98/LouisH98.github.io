@@ -125,3 +125,15 @@ test('window light travels behind the monitor onto the bed, never across its fac
   const window=windowLightAtX(WINDOW_LIGHT.origin.x);
   assert.deepEqual(window,WINDOW_LIGHT.origin);
 });
+
+
+test('shutdown collapses before phosphor decay and delays the camera pullback', async () => {
+  const { crtPowerOffFrame, CRT_SHUTDOWN_DURATION } = await import('../lib/console/crt.ts');
+  const start=crtPowerOffFrame(0), beam=crtPowerOffFrame(.35), dot=crtPowerOffFrame(.6);
+  assert.equal(start.width,1);assert.equal(start.height,1);
+  assert.equal(beam.width,1);assert.ok(beam.height<.005);
+  assert.ok(dot.width<.007);assert.equal(dot.opacity,1);
+  assert.ok(crtPowerOffFrame(1).opacity>0);assert.equal(crtPowerOffFrame(1).pullback,0);
+  assert.equal(crtPowerOffFrame(1.5).opacity,0);assert.equal(crtPowerOffFrame(1.5).pullback,0);
+  assert.equal(crtPowerOffFrame(CRT_SHUTDOWN_DURATION).pullback,1);
+});

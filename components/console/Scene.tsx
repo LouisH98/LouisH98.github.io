@@ -6,15 +6,16 @@ import { createIntroProfiler } from './introProfiler';
 import { createSettingsSculpture } from './settingsSculpture';
 import { assignParticleSlots, cityParticle, incomingParticle, joinedParticle, menuParticleSlot, particleSlot, type ParticleJoin } from '@/lib/console/particleMotion';
 import { bootFrame, smooth } from '@/lib/console/timeline';
-import { crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
+import { crtZoom, CRT_POWER_DURATION, crtPowerOffFrame } from '@/lib/console/crt';
 import { subscribeLighting } from '@/lib/console/lighting';
 import { renderResolution } from '@/lib/console/renderResolution';
 import { createLinearTarget } from './renderPipeline';
 import { createCrtShader } from './crtShader';
 import { createBedroomScene } from './bedroomScene';
-type Props = { clock?: RefObject<{boot:boolean;elapsed:number}>; powered?: boolean; powerButton?: RefObject<HTMLButtonElement | null>; settingIndex?:number; boot: boolean; elapsed: number; reduced: boolean; view: string; onFailure: () => void };
+type Props = { shutdownTime?:number|null; roomView?:boolean; clock?: RefObject<{boot:boolean;elapsed:number}>; powered?: boolean; powerButton?: RefObject<HTMLButtonElement | null>; settingIndex?:number; boot: boolean; elapsed: number; reduced: boolean; view: string; onFailure: () => void };
 export default function Scene(props: Props) {
   const host = useRef<HTMLDivElement>(null);
+  const roomControls = useRef<HTMLDivElement>(null);
   const state = useRef(props); state.current = props;
   useEffect(() => {
     const container = host.current; if (!container) return;
@@ -32,6 +33,12 @@ export default function Scene(props: Props) {
     let roomDirty=true;
     const televisionPicture=createLinearTarget(renderer);
     const bedroom=createBedroomScene(renderer,televisionPicture.texture,()=>{roomDirty=true;});
+    const controls=roomControls.current;
+    const activate=(event:Event)=>{
+      const button=(event.target as HTMLElement).closest<HTMLButtonElement>('button[data-room-action]');
+      if(button&&state.current.shutdownTime==null&&(!state.current.powered||state.current.roomView)){bedroom.interact(button.dataset.roomAction!);}
+    };
+    controls?.addEventListener('click',activate);
     const world = new THREE.Scene(), overlay = new THREE.Scene();
     world.name="towers";overlay.name="particles";
     world.fog = new THREE.FogExp2(0x111119, .019);
@@ -173,19 +180,23 @@ export default function Scene(props: Props) {
     const blue=new THREE.Color(0x359bbf);
     let joins:ParticleJoin[]=[];
     const previousCenter=new THREE.Vector2();
-    let lastRoomFrame=0;
+    let lastRoomFrame=0, roomCameraProgress=1;
     const animate=(now:number)=>{
       frame=requestAnimationFrame(animate);
       const dt=Math.min((now-previous)/1000,.05); previous=now; if(document.hidden)return;
       const p={...state.current,elapsed:state.current.clock?.current.elapsed??state.current.elapsed};
       bedroom.setEditingAvailable(p.powered===false);
+      if(!p.powered||p.roomView)bedroom.updateInteractions(dt,p.reduced);
       bedroom.setPowerHovered(!p.powered&&Boolean(p.powerButton?.current?.matches(':hover, :focus-visible')));
       if(bedroom.powerLightAnimating())roomDirty=true;
       if (p.powered === false && !roomDirty && (p.reduced || now-lastRoomFrame<1000/24)) return;
       profiler?.begin(!p.powered?'standby':!p.boot?'menu':p.elapsed<1.15?'ignition':p.elapsed<9?'intro':'zoom',now);
       lastRoomFrame=now;
-      const roomActive=p.powered !== undefined && (!p.powered || (p.boot && crtZoom(p.elapsed)<1));
-      const roomProgress=p.powered && p.boot ? crtZoom(p.elapsed) : 0;
+      const roomTarget=p.roomView? .62:1;
+      roomCameraProgress=p.reduced?roomTarget:THREE.MathUtils.lerp(roomCameraProgress,roomTarget,1-Math.exp(-dt*5));
+      if(Math.abs(roomCameraProgress-roomTarget)<.001)roomCameraProgress=roomTarget;
+      const roomActive=p.powered !== undefined && (!p.powered || (p.boot && crtZoom(p.elapsed)<1)||(!p.boot&&roomCameraProgress<1));
+      const roomProgress=!p.powered?0:p.boot?crtZoom(p.elapsed):roomCameraProgress;
       const powerTime=p.boot && p.elapsed<CRT_POWER_DURATION ? p.elapsed : null;
       const sourceAspect=roomActive?THREE.MathUtils.lerp(4/3,width/height,smooth((roomProgress-.65)/.35)):width/height;
       camera.aspect=sourceAspect;camera.updateProjectionMatrix();
@@ -294,12 +305,43 @@ export default function Scene(props: Props) {
       if(settings&&settingsAmount>.001)sculpture.render(renderer,overlay,screenCamera);
       renderer.clearDepth(); renderer.render(overlay,screenCamera);
       if (roomActive) {
-        crt.render(renderer,curvature,time,televisionPicture,powerTime);
-        const anchor=bedroom.render(televisionPicture.texture,width,height,roomProgress,Boolean(p.powered),p.reduced?0:now/1000);
+        crt.render(renderer,curvature,time,televisionPicture,powerTime,p.shutdownTime??null);
+        const anchor=bedroom.render(televisionPicture.texture,width,height,roomProgress,Boolean(p.powered&&(p.shutdownTime==null||p.shutdownTime<1.5)),p.reduced?0:now/1000,Boolean(p.powered&&!p.boot),p.shutdownTime==null?0:crtPowerOffFrame(p.shutdownTime).pullback,p.shutdownTime!=null);
         const button=p.powerButton?.current;
         if(button){button.style.left=`${anchor.x}px`;button.style.top=`${anchor.y}px`;button.style.width=`${anchor.size}px`;button.style.height=`${anchor.size}px`;}
+        const surface=container.parentElement?.querySelector<HTMLElement>('.screen-surface');
+        if(surface&&!p.boot){
+          const bounds=anchor.screen;
+          const scale=bounds.width/width;
+          surface.style.height=`${bounds.height/scale}px`;
+          surface.style.transform=`translate(${bounds.x}px,${bounds.y}px) scale(${scale})`;
+          surface.style.borderRadius='4%';surface.style.overflow='hidden';
+          const content=surface.querySelector<HTMLElement>('.screen-content');
+          if(content){
+            const off=p.shutdownTime==null?null:crtPowerOffFrame(p.shutdownTime);
+            content.style.transform=off?`scale(${off.width},${off.height})`:'';
+            content.style.opacity=off?String(off.opacity):'';
+          }
+        }
+        if(controls&&(!p.powered||p.roomView)){
+          for(const item of bedroom.interactionAnchors(width,height)){
+            const button=controls.querySelector<HTMLButtonElement>(`[data-room-action="${item.id}"]`);
+            if(button){
+              // Objects outside the camera have no invisible hit targets elsewhere.
+              const offscreen=item.x<28||item.x>width-28||item.y<28||item.y>height-80;
+              button.style.left=`${item.x}px`;
+              button.style.top=`${item.y}px`;
+              button.hidden=offscreen||!item.available;
+              button.setAttribute('aria-label',item.label);
+            }
+          }
+        }
         roomDirty=false;
-      } else crt.render(renderer, curvature, time);
+      } else {
+        crt.render(renderer, curvature, time);
+        const surface=container.parentElement?.querySelector<HTMLElement>('.screen-surface');
+        if(surface){surface.style.transform='none';surface.style.height='';surface.style.borderRadius='0';surface.style.overflow='';}
+      }
       if(!startupReady){
         startupReady=true;
         startupFrame=requestAnimationFrame(()=>dismissStartup());
@@ -309,6 +351,7 @@ export default function Scene(props: Props) {
     frame=requestAnimationFrame(animate);
     const lost=(event:Event)=>{event.preventDefault();state.current.onFailure();}; renderer.domElement.addEventListener('webglcontextlost',lost);
     return()=>{
+      controls?.removeEventListener('click',activate);
       profiler?.dispose();
       disposed = true; unsubscribeLighting();bedroom.dispose();televisionPicture.dispose();crt.dispose(); titleTexture.dispose(); titleMaterial.dispose(); titleGeometry.dispose();
       cancelAnimationFrame(frame);cancelAnimationFrame(startupFrame);observer.disconnect();renderer.domElement.removeEventListener('webglcontextlost',lost);
@@ -316,5 +359,9 @@ export default function Scene(props: Props) {
       towerInstances.dispose();box.dispose();materials.forEach(m=>m.dispose());sprites.forEach(s=>s.material.dispose());cores.forEach(s=>s.material.dispose());trailMaterials.forEach(m=>m.dispose());haze.material.dispose();clouds.forEach(c=>c.material.dispose());cloudTexture.dispose();coreTexture.dispose();texture.dispose();renderer.dispose();renderer.domElement.remove();
     };
   }, []);
-  return <div className="scene" ref={host} aria-hidden="true" />;
+  return <><div className="scene" ref={host} aria-hidden="true" />
+    <div className="room-controls" ref={roomControls} hidden={(props.powered&&!props.roomView)||props.shutdownTime!=null} aria-label="Bedroom interactions">
+      {(['desk','bedside','coffee'] as const).map(id=><button key={id} type="button" data-room-action={id} className="room-object" aria-label={id==='coffee'?'Knock coffee off desk':`Toggle ${id} lamp`}></button>)}
+    </div></>;
+
 }

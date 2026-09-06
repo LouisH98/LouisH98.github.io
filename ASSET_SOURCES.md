@@ -15,6 +15,8 @@ This is an independent personal portfolio recreation of the PS2 interface. It is
 
 ## Console assets
 
+- `public/audio/crt-shutdown.mp3`: “Switching a CRT off” by LukaCafuka, https://freesound.org/people/LukaCafuka/sounds/751516/ (CC0). A real CRT switch-off recorded with a Zoom H1n. Bundled from the public HQ MP3 at https://cdn.freesound.org/previews/751/751516_16236894-hq.mp3, without synthesis, pitch shifts, or time stretching. Playback gain 0.2. Replaces the generated effect.
+
 - Original BIOS menu effects: https://sounds.spriters-resource.com/playstation_2/systembios/asset/430102/page-1/
   - Archive: https://sounds.spriters-resource.com/media/assets/427/430102.zip?updated=1755546878
   - Cue identities and pitches verified against the labeled demonstration https://www.youtube.com/watch?v=3mvb9d-PASU (“Sony PlayStation & PlayStation 2 BIOS Sounds With Respective Pitches”), especially 258–270 seconds.

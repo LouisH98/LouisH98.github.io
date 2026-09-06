@@ -84,3 +84,16 @@ test('CRT ignition unlocks audio silently, then starts boot at the timeline hand
   assert.equal(s.calls.at(-1),'stop');
   s.controller.dispose();
 });
+
+
+test('shutdown cuts ambience, plays once, and cannot restart menu audio', async()=>{
+  const s=setup();s.setFrame({boot:false,elapsed:12});await s.controller.enable();
+  const before=s.sources.length;s.controller.shutdown();
+  assert.equal(s.sources.length,before+1);assert.deepEqual(s.calls.at(-1),{offset:0,loop:false});
+  s.controller.sync();s.controller.cue('move');assert.equal(s.sources.length,before+1);
+  s.controller.disable();assert.equal(s.calls.at(-1),'stop');s.controller.dispose();
+});
+test('muted shutdown stays silent',async()=>{
+  const s=setup();await s.controller.enable();s.controller.disable();
+  const before=s.sources.length;s.controller.shutdown();assert.equal(s.sources.length,before);s.controller.dispose();
+});

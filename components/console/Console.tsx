@@ -5,12 +5,12 @@ import BitmapText from './BitmapText';
 import ControlIcon from './ControlIcon';
 import Scene from './Scene';
 import CrtEntrance from './CrtEntrance';
-import { crtFullscreenBlend, crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
+import { crtFullscreenBlend, crtZoom, CRT_POWER_DURATION, CRT_SHUTDOWN_DURATION } from '@/lib/console/crt';
 import SaveIcon from './SaveIcon';
 import ProjectDetail from './ProjectDetail';
 import Settings from './Settings';
 import { BOOT_DURATION } from '@/lib/console/timeline';
-import { Volume2, VolumeX, ArrowUpRight } from 'lucide-react';
+import { Volume2, VolumeX, ArrowUpRight, Maximize, Minimize } from 'lucide-react';
 import { about, projects } from '@/lib/console/content';
 import { parseHash, routeHash, type Route } from '@/lib/console/navigation';
 import { ConsoleAudio } from '@/lib/console/audio';
@@ -19,6 +19,15 @@ const menu = [{ title: 'Browser', view: 'browser' }, { title: 'About Me', view: 
 export default function Console() {
   const [ready, setReady] = useState(false), [boot, setBoot] = useState(false), [elapsed, setElapsed] = useState(0);
   const [powered, setPowered] = useState(false);
+  const [roomView,setRoomView]=useState(false);
+  const [shutdownTime,setShutdownTime]=useState<number|null>(null);
+  const shutting=shutdownTime!==null;
+  function powerOff(){
+    if(shutting||boot||!roomView)return;
+    powerState.current=false;audio.current?.shutdown();audioUnlocked.current=false;setAudioReady(false);
+    setShutdownTime(0);
+  }
+
   const powerState = useRef(false);
   const powerButton = useRef<HTMLButtonElement>(null);
   const [changing, setChanging] = useState(false);
@@ -148,6 +157,20 @@ export default function Console() {
       });
     }
   }
+  useEffect(()=>{
+    if(!shutting)return;
+    let frame=0,time=0,previous=performance.now();
+    const tick=(now:number)=>{
+      if(!document.hidden)time+=(now-previous)/1000;
+      previous=now;
+      if(reduced||time>=CRT_SHUTDOWN_DURATION){
+        setPowered(false);setRoomView(false);setShutdownTime(null);
+        requestAnimationFrame(()=>powerButton.current?.focus());return;
+      }
+      setShutdownTime(time);frame=requestAnimationFrame(tick);
+    };
+    frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);
+  },[shutting,reduced]);
   const warming = boot && elapsed < CRT_POWER_DURATION;
   useEffect(() => {
     if (powered && boot && !warming) root.current?.querySelector<HTMLButtonElement>('.boot-bottom button')?.focus({ preventScroll: true });
@@ -163,6 +186,7 @@ export default function Console() {
     setSoundLoading(false);
   }
   function replay() {
+    setRoomView(false);
     if (reduced || failed) return;
     if (transition.current) clearTimeout(transition.current); setChanging(false);
     remember(); history.replaceState(null, '', `${location.pathname}${location.search}#/`); setRoute({ view: 'menu' });
@@ -174,17 +198,16 @@ export default function Console() {
   }
   const project = projects.find(p => p.id === route.projectId) || projects[0];
   const title = route.view === 'browser' ? 'Browser' : route.view === 'about' ? 'About Me' : route.view === 'settings' ? 'System Configuration' : 'Memory Card (PS2) / 1';
-  return <CrtEntrance fallback={failed} powerButton={powerButton} powered={powered} ready={ready} powerTime={warming ? elapsed : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powerOn}><main ref={root} style={{'--fullscreen-blend': powered ? boot ? crtFullscreenBlend(crtZoom(elapsed)) : 1 : 0} as CSSProperties} data-powered={powered} data-room={!powered || (boot && crtZoom(elapsed)<1)} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
+  return <CrtEntrance canPowerOff={roomView&&!boot} shutting={shutting} fallback={failed} powerButton={powerButton} powered={powered} ready={ready} powerTime={warming ? elapsed : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powered?powerOff:powerOn}><main ref={root} style={{'--fullscreen-blend': powered ? boot ? crtFullscreenBlend(crtZoom(elapsed)) : roomView ? 0 : 1 : 0} as CSSProperties} data-powered={powered} data-shutting={shutting} data-room={!powered || roomView || (boot && crtZoom(elapsed)<1)} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
     <h1 className="sr-only">Louis’s portfolio</h1>
     <div className="screen-haze" aria-hidden="true" />
-    {ready && !failed && <Scene clock={currentFrame} powered={powered} powerButton={powerButton} settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
-    <div className="transition-black" style={{ opacity: !reduced && !boot && changing ? 1 : 0 }} aria-hidden="true" />
+    {ready && !failed && <Scene shutdownTime={shutdownTime} roomView={roomView} clock={currentFrame} powered={powered} powerButton={powerButton} settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
     <header className="console-top"><button id="sound-control" data-sound-toggle className="sound-button" onClick={toggleSound} aria-pressed={sound} aria-busy={soundLoading} aria-label={sound ? 'Mute sound' : 'Enable sound'} title={sound ? 'Mute sound' : 'Enable sound'}>{sound ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}</button></header>
     {audioError && <output className="audio-status">{audioError}</output>}
     {boot ? <>
       <output className="sr-only">Louis Computer Entertainment. Starting up.</output>
       <div className="boot-bottom"><button onClick={finish} aria-label="Skip intro"><span>Skip intro</span><ControlIcon kind="cross" /></button></div>
-    </> : <div key={`${route.view}-${route.projectId || ""}`} className={`screen-content ${changing ? "is-changing" : ""}`}>
+    </> : <div className="screen-surface" inert={shutting}><div className="transition-black" style={{ opacity: !reduced && changing ? 1 : 0 }} aria-hidden="true" /><div key={`${route.view}-${route.projectId || ""}`} className={`screen-content ${changing ? "is-changing" : ""}`}>
       {route.view === 'menu' ? <>
         <nav className="main-menu" aria-label="Main menu" data-nav-group>{menu.map((item, i) => <a id={`menu-${item.view}`} data-nav-item key={item.title} href={routeHash({view:item.view})} className={`menu-item ${selected === i ? 'selected' : ''}`} onClick={() => { remember(); audio.current?.cue('enter'); }} onFocus={() => selection(i, 'menu')} onMouseEnter={() => selection(i, 'menu')}><BitmapText>{item.title}</BitmapText></a>)}</nav>
 
@@ -216,7 +239,8 @@ export default function Console() {
         {route.view !== 'menu' && <button className="footer-button footer-back" onClick={goBack} aria-label="Back"><ControlIcon kind="circle" /><BitmapText centered>Back</BitmapText></button>}
         {route.view === 'browser' && <button className="footer-button footer-options" aria-expanded={optionsOpen} onClick={() => { audio.current?.cue('enter'); setOptionsOpen(value=>!value); }}><ControlIcon kind="triangle" /><BitmapText centered>Options</BitmapText></button>}
       </footer>
-    </div>}
+    </div></div>}
+    {<button className="return-room sound-button" disabled={!powered||boot||shutting||failed} onClick={()=>setRoomView(value=>!value)} aria-label={!powered||roomView?'Enter fullscreen':'Exit fullscreen'} title={!powered||roomView?'Enter fullscreen':'Exit fullscreen'} aria-pressed={powered&&!roomView}>{!powered||roomView?<Maximize aria-hidden="true"/>:<Minimize aria-hidden="true"/>}</button>}
     <noscript><div className="noscript-portfolio"><h1>Hey! I’m Louis.</h1><p>Creative coding, hardware experiments, and 3D printing.</p><ul>{projects.map(p=><li key={p.id}><a href={p.url}>{p.title}</a><p>{p.summary}</p></li>)}</ul><a href={about.url}>Find me on GitHub</a></div></noscript>
   </main></CrtEntrance>;
 }
