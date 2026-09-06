@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { dismissStartup } from '@/lib/console/startup';
 import BitmapText from './BitmapText';
 import ControlIcon from './ControlIcon';
+import SocialIcon from './SocialIcon';
 import Scene from './Scene';
 import CrtEntrance from './CrtEntrance';
 import { crtFullscreenBlend, crtZoom, CRT_POWER_DURATION, CRT_SHUTDOWN_DURATION } from '@/lib/console/crt';
@@ -10,7 +11,7 @@ import SaveIcon from './SaveIcon';
 import ProjectDetail from './ProjectDetail';
 import Settings from './Settings';
 import { BOOT_DURATION } from '@/lib/console/timeline';
-import { Volume2, VolumeX, ArrowUpRight, Maximize, Minimize } from 'lucide-react';
+import { Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 import { about, projects } from '@/lib/console/content';
 import { parseHash, routeHash, type Route } from '@/lib/console/navigation';
 import { ConsoleAudio } from '@/lib/console/audio';
@@ -216,12 +217,12 @@ export default function Console() {
         {route.view === 'browser' && <section className="save-browser" aria-label="Memory card saves">
           <h2 className="memory-label"><BitmapText>Memory Card (PS2)/1</BitmapText></h2>
           <h3 className="selected-save-title" aria-live="polite"><BitmapText color="#e8ed81">{projects[save].title}</BitmapText></h3>
-          <div className="save-grid" data-nav-group>{projects.map((p, i) => <a id={`save-${p.id}`} data-nav-item aria-label={p.title} key={p.id} href={routeHash({ view:'project',projectId:p.id })} className={`save-item ${save===i ? 'selected' : ''}`} onClick={() => { remember(); audio.current?.cue('save'); }} onFocus={() => selection(i,'save')} onMouseEnter={() => selection(i,'save')}>
+          <div className="save-grid" data-nav-group>{projects.map((p, i) => <a id={`save-${p.id}`} data-nav-item aria-label={p.external ? `${p.title} (opens in a new tab)` : p.title} key={p.id} href={p.external ? p.url : routeHash({ view:'project',projectId:p.id })} target={p.external ? "_blank" : undefined} rel={p.external ? "noreferrer" : undefined} className={`save-item ${save===i ? 'selected' : ''}`} onClick={() => { remember(); audio.current?.cue('save'); }} onFocus={() => selection(i,'save')} onMouseEnter={() => selection(i,'save')}>
             <SaveIcon kind={p.id} active={save===i} reduced={reduced} image={p.image} />
             <h3 className="save-title"><BitmapText color={save===i ? "#e8ed81" : "#ffffff"}>{p.title}</BitmapText></h3>
           </a>)}</div>
           {optionsOpen && <nav className="save-options" aria-label="Save options">
-            <a data-nav-item href={routeHash({view:'project',projectId:projects[save].id})} onClick={() => audio.current?.cue('save')}>View project</a>
+            {!projects[save].external && <a data-nav-item href={routeHash({view:'project',projectId:projects[save].id})} onClick={() => audio.current?.cue('save')}>View project</a>}
             <a data-nav-item href={projects[save].url} target="_blank" rel="noreferrer" onClick={closeOptions}>{projects[save].linkLabel}<span className="sr-only"> (opens in a new tab)</span></a>
             <button data-nav-item onClick={closeOptions}>Cancel</button>
           </nav>}
@@ -229,13 +230,16 @@ export default function Console() {
         {route.view === 'about' && <section className="about-panel scroll-panel">
           <h1 tabIndex={-1} data-screen-heading><BitmapText>{about.intro}</BitmapText></h1>
           {about.paragraphs.map(p=><p key={p}>{p}</p>)}
-          <a id="github-profile" className="launch-link" href={about.url} target="_blank" rel="noreferrer">Find me on GitHub<ArrowUpRight className="action-icon" aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span></a>
+          <nav className="about-socials" aria-label="Social profiles">
+            <a id="linkedin-profile" className="social-button" href={about.linkedin} target="_blank" rel="noreferrer"><SocialIcon kind="linkedin"/><BitmapText>LinkedIn</BitmapText><span className="sr-only"> (opens in a new tab)</span></a>
+            <a id="github-profile" className="social-button" href={about.url} target="_blank" rel="noreferrer"><SocialIcon kind="github"/><BitmapText>GitHub</BitmapText><span className="sr-only"> (opens in a new tab)</span></a>
+          </nav>
         </section>}
         {route.view === 'settings' && <Settings index={settingIndex} setIndex={setSettingIndex} sound={sound} reduced={reduced} failed={failed} toggleSound={toggleSound} toggleMotion={() => { reducedOverride.current=true; setReduced(value=>!value); audio.current?.cue('enter'); }} replay={replay} cue={() => audio.current?.cue('setting')} />}
         {route.view === 'project' && <ProjectDetail key={project.id} project={project} reduced={reduced} />}
       </>}
       <footer className="console-footer">
-        {(route.view==='menu'||route.view==='browser'||route.view==='settings') && <button className="footer-button footer-enter" onClick={() => route.view==='settings' ? document.getElementById('configuration-value')?.click() : route.view==='menu' ? navigate({view:menu[selected].view}) : navigate({view:'project',projectId:projects[save].id}, 'save')}><ControlIcon kind="cross" /><BitmapText centered>Enter</BitmapText></button>}
+        {(route.view==='menu'||route.view==='browser'||route.view==='settings') && <button className="footer-button footer-enter" onClick={() => route.view==='settings' ? document.getElementById('configuration-value')?.click() : route.view==='menu' ? navigate({view:menu[selected].view}) : document.getElementById(`save-${projects[save].id}`)?.click()}><ControlIcon kind="cross" /><BitmapText centered>Enter</BitmapText></button>}
         {route.view !== 'menu' && <button className="footer-button footer-back" onClick={goBack} aria-label="Back"><ControlIcon kind="circle" /><BitmapText centered>Back</BitmapText></button>}
         {route.view === 'browser' && <button className="footer-button footer-options" aria-expanded={optionsOpen} onClick={() => { audio.current?.cue('enter'); setOptionsOpen(value=>!value); }}><ControlIcon kind="triangle" /><BitmapText centered>Options</BitmapText></button>}
       </footer>

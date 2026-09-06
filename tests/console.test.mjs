@@ -34,7 +34,7 @@ test('boot follows a reference title, flight, and continuous orb handoff', () =>
 });
 test('all hash routes survive serialization, invalid project IDs return to browser', () => {
   const routes = ['menu','browser','about','settings'].map(view=>({view}));
-  routes.push(...projects.map(p=>({view:'project',projectId:p.id})));
+  routes.push(...projects.filter(p=>!p.external).map(p=>({view:'project',projectId:p.id})));
   for(const route of routes) assert.deepEqual(parseHash(routeHash(route)),route);
   assert.deepEqual(parseHash('#/project/missing'),{view:'browser'});
   assert.deepEqual(parseHash('#/%E0%A4%A'),{view:'menu'});
@@ -47,7 +47,7 @@ test('asset URLs support root and GitHub project Pages', () => {
   assert.equal(asset('project-images/loveprint.png'),'/ps2folio/project-images/loveprint.png');
 });
 test('all project media, including reduced-motion stills, are local and present', async () => {
-  assert.deepEqual(projects.map(p=>p.id),['print-scheduler','the-screen','loveprint']);
+  assert.deepEqual(projects.map(p=>p.id),['labs-creations','print-scheduler','the-screen','loveprint']);
   for (const project of projects) {
     assert.equal(new URL(project.url).protocol,'https:');
     for(const path of [project.image,...project.sections.map(s=>s.image).filter(Boolean)]) {

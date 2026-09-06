@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { asset } from '@/lib/console/assets';
+import { voxelPlanter } from './voxelPlanter';
 // One offscreen WebGL context serves every save; route changes only replace
 // their scenes and 2D display canvases, avoiding repeated GPU-context creation.
 let sharedRenderer: THREE.WebGLRenderer | undefined;
@@ -16,7 +17,7 @@ function saveRenderer() {
 if (typeof window !== 'undefined') window.addEventListener('pagehide', () => {
   sharedRenderer?.dispose(); sharedRenderer?.forceContextLoss(); sharedRenderer=undefined;
 });
-export default function SaveIcon({ kind, active, reduced, image }: { kind: string; active: boolean; reduced: boolean; image: string }) {
+export default function SaveIcon({ kind, active, reduced, image, variant }: { kind: string; active: boolean; reduced: boolean; image: string; variant?: number }) {
   const host = useRef<HTMLDivElement>(null), state = useRef({ active, reduced });
   const [failed, setFailed] = useState(false); state.current = { active, reduced };
   useEffect(() => {
@@ -68,7 +69,18 @@ export default function SaveIcon({ kind, active, reduced, image }: { kind: strin
     let animateModel=(time:number)=>{void time;};
     const textures:THREE.Texture[]=[];
     const extraMaterials:THREE.Material[]=[];
-    if (kind === 'print-scheduler') {
+    if (kind === 'labs-creations') {
+      const pots = [0, 1, 2].map(index => { const pot = voxelPlanter(index, material); group.add(pot); return pot; });
+      animateModel = time => {
+        const cycle = time / 5, current = variant ?? Math.floor(cycle) % 3;
+        const transition = variant !== undefined || state.current.reduced ? 0 : Math.max(0, (cycle % 1 - .8) / .2);
+        const ease = transition * transition * (3 - 2 * transition);
+        pots.forEach((pot, index) => {
+          pot.visible = index === current || (transition > 0 && index === (current + 1) % 3);
+          pot.position.x = index === current ? -ease * 4 : (1 - ease) * 4;
+        });
+      };
+    } else if (kind === 'print-scheduler') {
       block(1.6, .22, 1.4, 0, -.75, 0, 0x6d79a6);
       [-.68, .68].forEach(x => { [-.5, .5].forEach(z => block(.13, 1.65, .13, x, .12, z, 0xbac3db)); });
       block(1.6, .18, 1.4, 0, .95, 0, 0x8597c6);
@@ -180,6 +192,6 @@ export default function SaveIcon({ kind, active, reduced, image }: { kind: strin
     };
     frame=requestAnimationFrame(tick);
     return ()=>{cancelAnimationFrame(frame);layoutObserver?.disconnect();browser?.removeEventListener('scroll',layout,true);paperRenderer?.dispose();paperRenderer?.forceContextLoss();paperRenderer?.domElement.remove();scene.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});materials.forEach(m=>m.dispose());extraMaterials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());canvas.remove();};
-  }, [kind]);
+  }, [kind, variant]);
   return <div className="save-icon" ref={host} aria-hidden="true">{failed && <img src={asset(image.replace(/\.mp4$/, '.png'))} alt="" />}</div>;
 }

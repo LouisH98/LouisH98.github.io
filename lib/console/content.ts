@@ -1,6 +1,13 @@
 export type ProjectSection = { title: string; paragraphs: string[]; bullets?: string[]; image?: string; caption?: string };
-export type Project = { id: string; title: string; summary: string; category: string; technologies: string[]; image: string; url: string; linkLabel: string; sections: ProjectSection[] };
+export type Project = { external?: boolean; id: string; title: string; summary: string; category: string; technologies: string[]; image: string; url: string; linkLabel: string; sections: ProjectSection[] };
 export const projects: Project[] = [
+  {
+    id: 'labs-creations', external: true, title: 'Labs Creations', category: 'DESIGN / 3D PRINTING',
+    summary: 'Labs Creations on Etsy.',
+    technologies: [], image: 'project-images/labs-creations/forest.jpg',
+    url: 'https://www.etsy.com/uk/shop/LabsCreationsUK', linkLabel: 'Visit Etsy shop',
+    sections: [],
+  },
   {
     id: 'print-scheduler', title: 'Print Scheduler', category: 'SOFTWARE / 3D PRINTING',
     summary: 'A web app for scheduling jobs across multiple 3D printers.',
@@ -44,4 +51,5 @@ export const about = {
   intro: 'Hi, I’m Louis.',
   paragraphs: ['I build software, experiment with Raspberry Pi hardware, and make things with 3D printers.', 'My projects include a print scheduler, an LED display framework, and a receipt printer that takes messages and drawings over the internet.'],
   url: 'https://github.com/LouisH98',
+  linkedin: 'https://www.linkedin.com/in/louish98/',
 };

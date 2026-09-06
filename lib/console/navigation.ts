@@ -6,7 +6,7 @@ export function parseHash(hash: string): Route {
   if (['browser', 'about', 'settings'].includes(value)) return { view: value as View };
   if (value.startsWith('project/')) {
     const projectId = value.slice(8);
-    if (projects.some(p => p.id === projectId)) return { view: 'project', projectId };
+    if (projects.some(p => p.id === projectId && !p.external)) return { view: 'project', projectId };
     return { view: 'browser' };
   }
   return { view: 'menu' };
