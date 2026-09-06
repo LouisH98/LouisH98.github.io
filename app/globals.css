@@ -359,3 +359,33 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .console[data-shutting="true"] .console-top { visibility:hidden; }
 
 .return-room:disabled { opacity:.22; cursor:default; background:transparent; }
+
+@media (max-width:700px) {
+  .return-room { bottom:max(20px,env(safe-area-inset-bottom)); right:max(20px,env(safe-area-inset-right)); touch-action:manipulation; }
+  .bedroom-stage[data-can-power-off="true"] .bedroom-power {
+    left:calc(50% - 22px) !important; right:auto; top:auto !important;
+    bottom:max(20px,env(safe-area-inset-bottom)); width:44px !important; height:44px !important; min-height:44px;
+    transform:none; padding:10px; border:0; border-radius:4px; background:transparent; box-shadow:none; transition:none;
+  }
+  .bedroom-stage[data-can-power-off="true"] .bedroom-power-mobile { display:none; }
+  .bedroom-stage[data-can-power-off="true"] .bedroom-power > .bedroom-power-label { display:flex; position:static; transform:none; justify-content:center; color:#c8c8ce; }
+  .bedroom-stage[data-can-power-off="true"] .bedroom-power-label svg { width:21px; height:21px; stroke-width:1.5; }
+  .bedroom-stage .console[data-room="true"] .console-top { bottom:max(20px,env(safe-area-inset-bottom)); left:max(20px,env(safe-area-inset-left)); }
+  .bedroom-stage[data-powered="false"] .return-room { bottom:calc(112px + env(safe-area-inset-bottom)); }
+}
+@media (max-width:700px) and (orientation:portrait) {
+  .console[data-room-view="true"] .main-menu { top:27%; left:13%; right:8%; gap:0; }
+  .console[data-room-view="true"] .menu-item { min-height:38px; font-size:clamp(14px,4.4vw,20px); }
+  .console[data-room-view="true"] .console-footer { bottom:3%; }
+}
+
+/* Keep fullscreen utilities below the menu's entire touch-target row. */
+@media (max-width:700px) {
+  .console[data-powered="true"][data-room-view="false"] .console-footer {
+    bottom:calc(80px + env(safe-area-inset-bottom));
+    grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px;
+  }
+  .console[data-powered="true"][data-room-view="false"] .scroll-panel {
+    bottom:max(17%,calc(136px + env(safe-area-inset-bottom)));
+  }
+}

@@ -137,3 +137,17 @@ test('shutdown collapses before phosphor decay and delays the camera pullback', 
   assert.equal(crtPowerOffFrame(1.5).opacity,0);assert.equal(crtPowerOffFrame(1.5).pullback,0);
   assert.equal(crtPowerOffFrame(CRT_SHUTDOWN_DURATION).pullback,1);
 });
+
+test('portrait room return keeps the casing in frame and stays closer than standby', async()=>{
+  const {bedroomCameraFrame}=await import('../lib/console/bedroomCamera.ts');
+  for(const [width,height] of [[320,932],[390,844],[430,932]]){
+    const room=bedroomCameraFrame(width,height,.62,true);
+    const standby=bedroomCameraFrame(width,height,0);
+    const visibleHalfWidth=(room.z-.645)*Math.tan(Math.PI/9)*(width/height);
+    assert.ok(visibleHalfWidth>=1.785,'entire casing fits horizontally');
+    assert.ok(room.z<standby.z,'return remains closer than initial room');
+    assert.equal(room.handoff,0,'room view does not blend into fullscreen');
+    const focused=bedroomCameraFrame(width,height,1,true);
+    assert.equal(focused.z,bedroomCameraFrame(width,height,1).z);
+  }
+});

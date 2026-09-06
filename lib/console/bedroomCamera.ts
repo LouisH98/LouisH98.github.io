@@ -3,11 +3,12 @@ import { smooth } from './timeline';
 export function bedroomCameraFrame(width: number, height: number, progress: number, returning = false) {
   const p=Math.min(1,Math.max(0,progress));
   const portrait=width<700&&height>width;
-  const initial={x:0,y:.11,z:portrait?11.7:8.1};
+  const fittedRoomZ=Math.max(5.3,.645+1.785/(Math.tan(Math.PI/9)*(width/height)*.98));
+  const initial={x:0,y:.11,z:portrait?Math.max(11.7,fittedRoomZ+.4):8.1};
   const distance=Math.min(1.125,1.5/(width/height))/Math.tan(Math.PI/9)*.92;
   const focusedZ=.72+distance;
   // Frame the TV closely while including the PS2 at the front of the desk.
-  const roomZ=5.3;
+  const roomZ=portrait?fittedRoomZ:5.3;
   const returnBlend=Math.min(1,Math.max(0,(p-.62)/.38));
   return {
     x:0,
