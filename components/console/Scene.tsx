@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
+import { dismissStartup } from '@/lib/console/startup';
 import { createIntroProfiler } from './introProfiler';
 import { createSettingsSculpture } from './settingsSculpture';
 import { assignParticleSlots, cityParticle, incomingParticle, joinedParticle, menuParticleSlot, particleSlot, type ParticleJoin } from '@/lib/console/particleMotion';
@@ -165,6 +166,7 @@ export default function Scene(props: Props) {
     // first-use uniform/buffer initialization on every driver.
     crt.render(renderer,0,0);
     let frame=0,time=0,previous=0,initialized=false;
+    let startupFrame=0, startupReady=false;
     let settingsAmount=0,ringMotion=0,menuTime=0;
     let backgroundAlpha=state.current.boot?1:0;
     const center=new THREE.Vector2(), target=new THREE.Vector2(); let radius=.28;
@@ -298,6 +300,10 @@ export default function Scene(props: Props) {
         if(button){button.style.left=`${anchor.x}px`;button.style.top=`${anchor.y}px`;button.style.width=`${anchor.size}px`;button.style.height=`${anchor.size}px`;}
         roomDirty=false;
       } else crt.render(renderer, curvature, time);
+      if(!startupReady){
+        startupReady=true;
+        startupFrame=requestAnimationFrame(()=>dismissStartup());
+      }
       profiler?.end(now);
     };
     frame=requestAnimationFrame(animate);
@@ -305,7 +311,7 @@ export default function Scene(props: Props) {
     return()=>{
       profiler?.dispose();
       disposed = true; unsubscribeLighting();bedroom.dispose();televisionPicture.dispose();crt.dispose(); titleTexture.dispose(); titleMaterial.dispose(); titleGeometry.dispose();
-      cancelAnimationFrame(frame);observer.disconnect();renderer.domElement.removeEventListener('webglcontextlost',lost);
+      cancelAnimationFrame(frame);cancelAnimationFrame(startupFrame);observer.disconnect();renderer.domElement.removeEventListener('webglcontextlost',lost);
       sculpture.dispose();fadePlane.geometry.dispose();fadePlane.material.dispose();
       towerInstances.dispose();box.dispose();materials.forEach(m=>m.dispose());sprites.forEach(s=>s.material.dispose());cores.forEach(s=>s.material.dispose());trailMaterials.forEach(m=>m.dispose());haze.material.dispose();clouds.forEach(c=>c.material.dispose());cloudTexture.dispose();coreTexture.dispose();texture.dispose();renderer.dispose();renderer.domElement.remove();
     };

@@ -7,10 +7,22 @@
     <meta name="description" content="Creative coding, hardware experiments, and things I have made. Explore Louis’s projects through a PlayStation 2 inspired portfolio." />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <title>Louis Computer Entertainment</title>
+    <style>
+      html,body{margin:0;background:#030308}
+      #startup-loader{position:fixed;inset:0;z-index:10000;display:grid;place-content:center;gap:24px;text-align:center;background:#030308;color:#c6cbd9;font:12px/1.6 Arial,sans-serif;letter-spacing:.2em;transition:opacity .35s ease}
+      #startup-loader p{margin:0}
+      .startup-orbs{position:relative;width:104px;height:104px;margin:auto}
+      .startup-orbs span{position:absolute;inset:0;transform:rotate(var(--angle));animation:startup-orbit 5s linear infinite}
+      .startup-orbs span::after{content:"";position:absolute;left:47px;top:4px;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,#e5faff 0%,#90dcff 22%,#398bff 48%,transparent 72%);box-shadow:0 0 12px 3px #287aff88,0 0 24px 5px #1957db33;opacity:var(--glow)}
+      #startup-loader[data-ready]{opacity:0;pointer-events:none}
+      @keyframes startup-orbit{to{transform:rotate(calc(var(--angle) + 360deg))}}
+      @media(prefers-reduced-motion:reduce){.startup-orbs span{animation:none}#startup-loader{transition:none}}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <noscript><main style="padding:2rem;font-family:Arial,sans-serif"><h1>Hey! I’m Louis.</h1><p>Creative coding, hardware experiments, and 3D printing.</p><ul><li><a href="https://print-scheduler.vercel.app">Print Scheduler</a> — scheduling jobs across 3D printers.</li><li><a href="https://github.com/LouisH98/the-screen">The Screen</a> — digital art for a small LED display.</li><li><a href="https://github.com/LouisH98/loveprint-web-client">LovePrint</a> — messages and drawings sent to a receipt printer.</li></ul><a href="https://github.com/LouisH98">Find me on GitHub</a></main></noscript>
+    <div id="startup-loader" role="status" aria-live="polite"><div class="startup-orbs" aria-hidden="true"><span style="--angle:0deg;--glow:1.000"></span><span style="--angle:45deg;--glow:0.935"></span><span style="--angle:90deg;--glow:0.870"></span><span style="--angle:135deg;--glow:0.805"></span><span style="--angle:180deg;--glow:0.740"></span><span style="--angle:225deg;--glow:0.675"></span><span style="--angle:270deg;--glow:0.610"></span><span style="--angle:315deg;--glow:0.545"></span></div><p>loading</p></div>
+    <div id="root" inert></div>
+    <noscript><style>#startup-loader{display:none}</style><main style="padding:2rem;font-family:Arial,sans-serif"><h1>Hey! I’m Louis.</h1><p>Creative coding, hardware experiments, and 3D printing.</p><ul><li><a href="https://print-scheduler.vercel.app">Print Scheduler</a> — scheduling jobs across 3D printers.</li><li><a href="https://github.com/LouisH98/the-screen">The Screen</a> — digital art for a small LED display.</li><li><a href="https://github.com/LouisH98/loveprint-web-client">LovePrint</a> — messages and drawings sent to a receipt printer.</li></ul><a href="https://github.com/LouisH98">Find me on GitHub</a></main></noscript>
     <script type="module" src="/app/main.tsx"></script>
   </body>
 </html>

@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { dismissStartup } from '@/lib/console/startup';
 import BitmapText from './BitmapText';
 import ControlIcon from './ControlIcon';
 import Scene from './Scene';
@@ -35,6 +36,7 @@ export default function Console() {
   const currentRoute = useRef(route); currentRoute.current = route;
   const focusByView = useRef<Record<string, string>>({}), reducedOverride = useRef(false);
   motionState.current = reduced;
+  useEffect(()=>{if(failed)dismissStartup();},[failed]);
   const finish = useCallback(() => { setBoot(false); }, []);
 
   useEffect(() => {
