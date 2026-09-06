@@ -6,8 +6,14 @@ const storageKey='ps2folio:dev-layout:v1';
 
 export function createLayoutEditor(renderer:THREE.WebGLRenderer,room:THREE.Scene,camera:THREE.Camera,items:LayoutItem[],invalidate:()=>void,finish:()=>void){
   const panel=document.createElement('aside');panel.className='layout-dev';panel.dataset.devControls='';panel.setAttribute('aria-label','Room layout development controls');
-  panel.innerHTML='<label><input type="checkbox"> Arrange room</label><p>Drag props along their surface. Poster moves along the wall. Select an item and use arrow keys for fine adjustments; Shift moves faster. Layout saves in this browser.</p><select aria-label="Select room item"><option value="">Select an item</option></select><output aria-live="polite"></output><div><button type="button">Copy layout</button><button type="button">Reset layout</button></div><textarea aria-label="Room layout JSON" readonly hidden></textarea>';
+  panel.innerHTML='<div class="layout-dev-drag-handle">Room layout <span aria-hidden="true">⠿</span></div><label><input type="checkbox"> Arrange room</label><p>Drag props along their surface. Poster moves along the wall. Select an item and use arrow keys for fine adjustments; Shift moves faster. Layout saves in this browser.</p><select aria-label="Select room item"><option value="">Select an item</option></select><output aria-live="polite"></output><div><button type="button">Copy layout</button><button type="button">Reset layout</button></div><textarea aria-label="Room layout JSON" readonly hidden></textarea>';
   document.body.append(panel);
+  const dragHandle=panel.querySelector<HTMLElement>('.layout-dev-drag-handle')!;
+  let panelPointer:number|null=null,panelOffsetX=0,panelOffsetY=0;
+  const endPanelDrag=(event:PointerEvent)=>{if(panelPointer!==event.pointerId)return;panelPointer=null;if(dragHandle.hasPointerCapture(event.pointerId))dragHandle.releasePointerCapture(event.pointerId);};
+  dragHandle.onpointerdown=event=>{if(event.button!==0)return;const rect=panel.getBoundingClientRect();panelPointer=event.pointerId;panelOffsetX=event.clientX-rect.left;panelOffsetY=event.clientY-rect.top;dragHandle.setPointerCapture(event.pointerId);event.preventDefault();};
+  dragHandle.onpointermove=event=>{if(panelPointer!==event.pointerId)return;const rect=panel.getBoundingClientRect();panel.style.left=`${Math.max(0,Math.min(innerWidth-rect.width,event.clientX-panelOffsetX))}px`;panel.style.top=`${Math.max(0,Math.min(innerHeight-rect.height,event.clientY-panelOffsetY))}px`;panel.style.right='auto';panel.style.bottom='auto';};
+  dragHandle.onpointerup=endPanelDrag;dragHandle.onpointercancel=endPanelDrag;
   const toggle=panel.querySelector('input')!,select=panel.querySelector('select')!,status=panel.querySelector('output')!,text=panel.querySelector('textarea')!;
   const overlay=document.createElement('div');overlay.className='layout-dev-surface';overlay.style.display='none';overlay.setAttribute('aria-label','Drag room props');document.body.append(overlay);
   const defaults=items.map(item=>new THREE.Vector3(...(LAYOUT_DEFAULTS[item.name]??[0,0,0])));

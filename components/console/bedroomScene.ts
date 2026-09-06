@@ -412,7 +412,7 @@ export function createBedroomScene(renderer: THREE.WebGLRenderer,picture:THREE.T
       ledMaterial.emissiveIntensity=ledStrength;
       standby.color.copy(ledMaterial.emissive);standby.intensity=.085*ledStrength;
       screenLightSampler.update(picture,screenLight,powered,getLighting().screen);
-      renderer.setRenderTarget(null);renderer.setClearColor('#090d15',1);atmosphere.render(renderer,room,camera,taskLight);
+      renderer.setRenderTarget(null);renderer.setClearColor('#090d15',1);atmosphere.render(renderer,room,camera,taskLight,progress,time);
       anchor.copy(powerPosition).project(camera);edge.copy(powerPosition).add(new THREE.Vector3(.11,0,0)).project(camera);
       return { x:(anchor.x+1)*width/2,y:(1-anchor.y)*height/2,size:Math.max(44,Math.abs(edge.x-anchor.x)*width) };
     },
