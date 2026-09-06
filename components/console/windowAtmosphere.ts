@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createSourceBloom } from './sourceBloom';
 import { createLinearTarget } from './renderPipeline';
 import { getLighting } from '@/lib/console/lighting';
+import { crtFullscreenBlend } from '@/lib/console/crt';
 import { WINDOW_LIGHT } from '@/lib/console/windowLight';
 
 /** Depth-aware scattering through the four window panes, bounded by opaque room geometry. */
@@ -11,10 +12,12 @@ export function createWindowAtmosphere(renderer: THREE.WebGLRenderer) {
   target.depthTexture=new THREE.DepthTexture(1,1,THREE.UnsignedIntType);
   const material=new THREE.ShaderMaterial({
     depthTest:false,depthWrite:false,dithering:true,
-    uniforms:{vignetteStrength:{value:0},grainStrength:{value:0},contactStrength:{value:0},gradeStrength:{value:0},finishAmount:{value:1},grainTime:{value:0},resolution:{value:new THREE.Vector2(1,1)},bloomPicture:{value:bloom.texture},lampPosition:{value:new THREE.Vector3()},lampDirection:{value:new THREE.Vector3()},lampColor:{value:new THREE.Color()},lampStrength:{value:0},lampOuter:{value:0},lampInner:{value:0},lampShadow:{value:null},lampShadowMatrix:{value:new THREE.Matrix4()},density:{value:.045},windowOrigin:{value:new THREE.Vector3(...Object.values(WINDOW_LIGHT.origin))},lightDirection:{value:new THREE.Vector3(...Object.values(WINDOW_LIGHT.direction))},picture:{value:target.texture},sceneDepth:{value:target.depthTexture},inverseProjection:{value:new THREE.Matrix4()},cameraWorld:{value:new THREE.Matrix4()}},
+    uniforms:{fullscreenPicture:{value:null as THREE.Texture|null},fullscreenBlend:{value:0},vignetteStrength:{value:0},grainStrength:{value:0},contactStrength:{value:0},gradeStrength:{value:0},finishAmount:{value:1},grainTime:{value:0},resolution:{value:new THREE.Vector2(1,1)},bloomPicture:{value:bloom.texture},lampPosition:{value:new THREE.Vector3()},lampDirection:{value:new THREE.Vector3()},lampColor:{value:new THREE.Color()},lampStrength:{value:0},lampOuter:{value:0},lampInner:{value:0},lampShadow:{value:null},lampShadowMatrix:{value:new THREE.Matrix4()},density:{value:.045},windowOrigin:{value:new THREE.Vector3(...Object.values(WINDOW_LIGHT.origin))},lightDirection:{value:new THREE.Vector3(...Object.values(WINDOW_LIGHT.direction))},picture:{value:target.texture},sceneDepth:{value:target.depthTexture},inverseProjection:{value:new THREE.Matrix4()},cameraWorld:{value:new THREE.Matrix4()}},
     vertexShader:`varying vec2 screenUV;
       void main(){screenUV=uv;gl_Position=vec4(position.xy,0.0,1.0);}`,
-    fragmentShader:`uniform sampler2D picture;
+    fragmentShader:`uniform sampler2D fullscreenPicture;
+      uniform float fullscreenBlend;
+      uniform sampler2D picture;
       uniform sampler2D bloomPicture;
       uniform sampler2D sceneDepth;
       uniform float vignetteStrength;
@@ -152,13 +155,19 @@ export function createWindowAtmosphere(renderer: THREE.WebGLRenderer) {
         graded=graded*vignette+grain*grainStrength*smoothstep(.015,.12,luma);
         gl_FragColor.rgb=mix(gl_FragColor.rgb,graded,finishAmount);
         #include <dithering_fragment>
+        // Blend after every room-only effect, in the same display colour space
+        // as the direct CRT pass. At the boundary the two paths are identical.
+        vec4 fullscreen = linearToOutputTexel(texture2D(fullscreenPicture, screenUV));
+        gl_FragColor = mix(gl_FragColor, fullscreen, fullscreenBlend);
       }`,
   });
   const scene=new THREE.Scene();scene.name="atmosphere";const camera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
   const geometry=new THREE.PlaneGeometry(2,2);scene.add(new THREE.Mesh(geometry,material));
   const size=new THREE.Vector2();
   return {
-    render(renderer:THREE.WebGLRenderer,room:THREE.Scene,view:THREE.PerspectiveCamera,lamp:THREE.SpotLight,progress=0,time=0){
+    render(renderer:THREE.WebGLRenderer,room:THREE.Scene,view:THREE.PerspectiveCamera,lamp:THREE.SpotLight,progress=0,time=0,fullscreenPicture:THREE.Texture|null=null){
+      material.uniforms.fullscreenPicture.value=fullscreenPicture;
+      material.uniforms.fullscreenBlend.value=fullscreenPicture?crtFullscreenBlend(progress):0;
       const lighting=getLighting();material.uniforms.density.value=lighting.haze;
       material.uniforms.vignetteStrength.value=lighting.vignette;
       material.uniforms.grainStrength.value=lighting.filmGrain;

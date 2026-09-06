@@ -19,6 +19,11 @@ export function crtZoom(seconds: number) {
   return t*t*t*(t*(t*6-15)+10);
 }
 
+/** Match the direct fullscreen picture before switching away from the room pass. */
+export function crtFullscreenBlend(progress: number) {
+  return smooth((progress - .9) / .1);
+}
+
 /** Animate the aperture itself so the live scene never stretches or swaps canvases. */
 export function crtLayout(width: number, height: number, progress: number) {
   const portrait = width <= 700 && height > width;

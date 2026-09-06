@@ -281,7 +281,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .bedroom-stage { position:relative; width:100%; height:100svh; overflow:hidden; background:#090d15; }
 .bedroom-stage > .console { width:100%; height:100%; min-height:0; }
 .bedroom-stage .console[data-powered="false"] > :not(.scene):not(.sr-only) { visibility:hidden; }
-.bedroom-stage .console[data-room="true"] .screen-haze { visibility:hidden; }
+.bedroom-stage .console .screen-haze { opacity:var(--fullscreen-blend,0); }
 .bedroom-power { position:absolute; left:65%; top:65%; width:44px; height:44px; transform:translate(-50%,-50%); z-index:20; border-radius:50%; background:transparent; }
 
 .bedroom-power:focus-visible { outline:2px solid #f0c497; outline-offset:2px; }

@@ -1,11 +1,11 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { dismissStartup } from '@/lib/console/startup';
 import BitmapText from './BitmapText';
 import ControlIcon from './ControlIcon';
 import Scene from './Scene';
 import CrtEntrance from './CrtEntrance';
-import { crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
+import { crtFullscreenBlend, crtZoom, CRT_POWER_DURATION } from '@/lib/console/crt';
 import SaveIcon from './SaveIcon';
 import ProjectDetail from './ProjectDetail';
 import Settings from './Settings';
@@ -174,7 +174,7 @@ export default function Console() {
   }
   const project = projects.find(p => p.id === route.projectId) || projects[0];
   const title = route.view === 'browser' ? 'Browser' : route.view === 'about' ? 'About Me' : route.view === 'settings' ? 'System Configuration' : 'Memory Card (PS2) / 1';
-  return <CrtEntrance fallback={failed} powerButton={powerButton} powered={powered} ready={ready} powerTime={warming ? elapsed : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powerOn}><main ref={root} data-powered={powered} data-room={!powered || (boot && crtZoom(elapsed)<1)} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
+  return <CrtEntrance fallback={failed} powerButton={powerButton} powered={powered} ready={ready} powerTime={warming ? elapsed : null} progress={powered ? boot ? crtZoom(elapsed) : 1 : 0} onPower={powerOn}><main ref={root} style={{'--fullscreen-blend': powered ? boot ? crtFullscreenBlend(crtZoom(elapsed)) : 1 : 0} as CSSProperties} data-powered={powered} data-room={!powered || (boot && crtZoom(elapsed)<1)} data-ready={ready} data-view={!ready ? 'initializing' : boot ? 'boot' : route.view} data-motion={reduced ? 'reduced' : 'full'} data-audio={sound ? audioReady ? 'on' : 'pending' : 'off'} className={`console ${boot ? 'is-booting' : ''} ${failed ? 'scene-failed' : ''} view-${route.view}`}>
     <h1 className="sr-only">Louis’s portfolio</h1>
     <div className="screen-haze" aria-hidden="true" />
     {ready && !failed && <Scene clock={currentFrame} powered={powered} powerButton={powerButton} settingIndex={settingIndex} boot={boot} elapsed={elapsed} reduced={reduced} view={route.view} onFailure={() => { setFailed(true); finish(); }} />}
