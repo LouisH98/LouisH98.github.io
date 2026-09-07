@@ -180,7 +180,7 @@ export default function Scene(props: Props) {
     const blue=new THREE.Color(0x359bbf);
     let joins:ParticleJoin[]=[];
     const previousCenter=new THREE.Vector2();
-    let lastRoomFrame=0, roomCameraProgress=1;
+    let roomCameraProgress=1;
     const animate=(now:number)=>{
       frame=requestAnimationFrame(animate);
       const dt=Math.min((now-previous)/1000,.05); previous=now; if(document.hidden)return;
@@ -189,9 +189,8 @@ export default function Scene(props: Props) {
       if(!p.powered||p.roomView)bedroom.updateInteractions(dt,p.reduced);
       bedroom.setPowerHovered(!p.powered&&Boolean(p.powerButton?.current?.matches(':hover, :focus-visible')));
       if(bedroom.powerLightAnimating())roomDirty=true;
-      if (p.powered === false && !roomDirty && (p.reduced || now-lastRoomFrame<1000/24)) return;
+      if (p.powered === false && !roomDirty && p.reduced) return;
       profiler?.begin(!p.powered?'standby':!p.boot?'menu':p.elapsed<1.15?'ignition':p.elapsed<9?'intro':'zoom',now);
-      lastRoomFrame=now;
       const roomTarget=p.roomView? .62:1;
       roomCameraProgress=p.reduced?roomTarget:THREE.MathUtils.lerp(roomCameraProgress,roomTarget,1-Math.exp(-dt*5));
       if(Math.abs(roomCameraProgress-roomTarget)<.001)roomCameraProgress=roomTarget;
