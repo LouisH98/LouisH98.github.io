@@ -12,7 +12,7 @@ import ProjectDetail from './ProjectDetail';
 import Settings from './Settings';
 import { BOOT_DURATION } from '@/lib/console/timeline';
 import { Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
-import { about, projects } from '@/lib/console/content';
+import { about, browserProjects as projects, projectSections } from '@/lib/console/content';
 import { parseHash, routeHash, type Route } from '@/lib/console/navigation';
 import { ConsoleAudio } from '@/lib/console/audio';
 
@@ -217,10 +217,12 @@ export default function Console() {
         {route.view === 'browser' && <section className="save-browser" aria-label="Memory card saves">
           <h2 className="memory-label"><BitmapText>Memory Card (PS2)/1</BitmapText></h2>
           <h3 className="selected-save-title" aria-live="polite"><BitmapText color="#e8ed81">{projects[save].title}</BitmapText></h3>
-          <div className="save-grid" data-nav-group>{projects.map((p, i) => <a id={`save-${p.id}`} data-nav-item aria-label={p.external ? `${p.title} (opens in a new tab)` : p.title} key={p.id} href={p.external ? p.url : routeHash({ view:'project',projectId:p.id })} target={p.external ? "_blank" : undefined} rel={p.external ? "noreferrer" : undefined} className={`save-item ${save===i ? 'selected' : ''}`} onClick={() => { remember(); audio.current?.cue('save'); }} onFocus={() => selection(i,'save')} onMouseEnter={() => selection(i,'save')}>
+          <div className="save-sections" data-nav-group>{projectSections.map(section => <section className="save-section" key={section.title} aria-label={section.title}>
+            <h3 className="save-section-title"><BitmapText>{section.title}</BitmapText></h3>
+            <div className="save-grid">{section.projects.map(p => { const i = projects.indexOf(p); return <a id={`save-${p.id}`} data-nav-item aria-label={p.external ? `${p.title} (opens in a new tab)` : p.title} key={p.id} href={p.external ? p.url : routeHash({ view:'project',projectId:p.id })} target={p.external ? "_blank" : undefined} rel={p.external ? "noreferrer" : undefined} className={`save-item ${save===i ? 'selected' : ''}`} onClick={() => { remember(); audio.current?.cue('save'); }} onFocus={() => selection(i,'save')} onMouseEnter={() => selection(i,'save')}>
             <SaveIcon kind={p.id} active={save===i} reduced={reduced} image={p.image} />
             <h3 className="save-title"><BitmapText color={save===i ? "#e8ed81" : "#ffffff"}>{p.title}</BitmapText></h3>
-          </a>)}</div>
+          </a>; })}</div></section>)}</div>
           {optionsOpen && <nav className="save-options" aria-label="Save options">
             {!projects[save].external && <a data-nav-item href={routeHash({view:'project',projectId:projects[save].id})} onClick={() => audio.current?.cue('save')}>View project</a>}
             <a data-nav-item href={projects[save].url} target="_blank" rel="noreferrer" onClick={closeOptions}>{projects[save].linkLabel}<span className="sr-only"> (opens in a new tab)</span></a>

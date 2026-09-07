@@ -54,3 +54,14 @@ export const about = {
   url: 'https://github.com/LouisH98',
   linkedin: 'https://www.linkedin.com/in/louish98/',
 };
+
+export const professionalProjects: Project[] = [
+  { id: 'arm', external: true, title: 'Arm', category: 'PROFESSIONAL', summary: '', technologies: [], image: 'company-logos/arm.svg', url: 'https://www.arm.com/', linkLabel: 'Visit Arm', sections: [] },
+  { id: 'cambridge-intelligence', external: true, title: 'Cambridge Intelligence', category: 'PROFESSIONAL', summary: '', technologies: [], image: 'company-logos/cambridge-intelligence.png', url: 'https://cambridge-intelligence.com/', linkLabel: 'Visit Cambridge Intelligence', sections: [] },
+];
+export const professionalWorkEnabled = import.meta.env?.VITE_SHOW_PROFESSIONAL_WORK === 'true';
+export const projectSections = [
+  ...(professionalWorkEnabled ? [{ title: 'Professional', projects: professionalProjects }] : []),
+  { title: 'Personal', projects },
+];
+export const browserProjects = projectSections.flatMap(section => section.projects);

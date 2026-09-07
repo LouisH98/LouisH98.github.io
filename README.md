@@ -23,6 +23,12 @@ Open the URL printed in the terminal.
 
 Project descriptions and biography live in [`lib/console/content.ts`](lib/console/content.ts); media lives in [`public/`](public/). Development mode also includes a **Lighting lab** panel for adjusting the room’s lighting.
 
+The unfinished professional-work section is hidden by default. To show it while writing the Arm and Cambridge Intelligence case studies, start the site with:
+
+```sh
+VITE_SHOW_PROFESSIONAL_WORK=true npm run dev
+```
+
 ## Build and deploy
 
 ```sh

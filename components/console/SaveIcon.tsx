@@ -69,7 +69,19 @@ export default function SaveIcon({ kind, active, reduced, image, variant }: { ki
     let animateModel=(time:number)=>{void time;};
     const textures:THREE.Texture[]=[];
     const extraMaterials:THREE.Material[]=[];
-    if (kind === 'labs-creations') {
+    let disposed=false;
+    if (kind === 'arm' || kind === 'cambridge-intelligence') {
+      const isArm=kind==='arm';
+      block(2.35, 1.25, .16, 0, 0, 0, isArm ? 0x080225 : 0xdce2e8);
+      const logoMaterial=new THREE.MeshBasicMaterial({transparent:true});extraMaterials.push(logoMaterial);
+      const logo=new THREE.Mesh(new THREE.PlaneGeometry(1.9,isArm ? .58 : .55),logoMaterial);
+      logo.position.z=.085;group.add(logo);
+      new THREE.TextureLoader().load(asset(image),texture=>{
+        if(disposed){texture.dispose();return;}
+        texture.colorSpace=THREE.SRGBColorSpace;texture.magFilter=THREE.NearestFilter;
+        textures.push(texture);logoMaterial.map=texture;logoMaterial.needsUpdate=true;
+      },undefined,()=>{if(!disposed)setFailed(true);});
+    } else if (kind === 'labs-creations') {
       const pots = [0, 1, 2].map(index => { const pot = voxelPlanter(index, material); group.add(pot); return pot; });
       animateModel = time => {
         const cycle = time / 5, current = variant ?? Math.floor(cycle) % 3;
@@ -81,35 +93,109 @@ export default function SaveIcon({ kind, active, reduced, image, variant }: { ki
         });
       };
     } else if (kind === 'print-scheduler') {
-      block(1.6, .22, 1.4, 0, -.75, 0, 0x6d79a6);
-      [-.68, .68].forEach(x => { [-.5, .5].forEach(z => block(.13, 1.65, .13, x, .12, z, 0xbac3db)); });
-      block(1.6, .18, 1.4, 0, .95, 0, 0x8597c6);
-      block(1.3, .10, 1.1, 0, -.30, 0, 0x7589ad);
-      const rail=block(1.4,.08,.08,0,.5,0,0xced7ec);
-      const head=block(.25,.22,.23,0,.38,0,0x404866);
-      const nozzle=block(.07,.10,.07,0,.23,0,0xe4bb73);
-      const layers=Array.from({length:24},(_,i)=>{
-        const r=.19+.035*Math.sin(i/23*Math.PI*2);
-        const layer=new THREE.Mesh(new THREE.TorusGeometry(r,.018,4,20),material(0x82b7d2));
-        layer.rotation.x=Math.PI/2;layer.position.y=-.23+i*.024;group.add(layer);return layer;
+      // An open-front gantry keeps the print readable at save-icon size.
+      block(1.85, .30, 1.4, 0, -.85, 0, 0x465477);
+      [-.78, .78].forEach(x => block(.23, 1.8, .28, x, .15, -.25, 0xaab9d4));
+      block(1.95, .25, .42, 0, 1.08, -.25, 0x657ba5);
+      block(.42, .16, .055, .53, -.82, .72, 0x76e6ce);
+      const bed=block(1.4, .14, 1.05, 0, -.60, 0, 0x8498bb);
+      const surface=block(1.25, .035, .92, 0, -.512, 0, 0x28394f);
+      const rail=block(1.5,.14,.16,0,.5,-.25,0xd2dded);
+      const head=block(.40,.34,.37,0,.38,0,0xefad60);
+      const fan=block(.22,.19,.035,0,.38,.20,0x35415a);
+      const nozzle=block(.09,.13,.09,0,.145,0,0xffdb91);
+      const radius=(progress:number)=>.22+.15*Math.sin(progress*Math.PI)-.085*Math.exp(-Math.pow((progress-.82)/.16,2));
+      const layers=Array.from({length:28},(_,i)=>{
+        const layer=new THREE.Mesh(new THREE.TorusGeometry(radius(i/27),.023,4,16),material(0x58dbbc));
+        layer.rotation.x=Math.PI/2;layer.position.y=-.47+i*.033;group.add(layer);return layer;
       });
+      const prints=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
+      prints.forEach(print=>group.add(print));
+      layers.forEach(layer=>prints[0].add(layer));
+      // Top-to-bottom silhouettes are sliced into the same 28 print layers.
+      const patterns=[
+        ['000010000','000111000','001111100','001212100','001111100','011111110','011111110','001111100','001101100','011101110'],
+        ['001000100','001101100','001111100','001212100','001131100','000111000','000111001','001111001','001111011','001111110'],
+      ];
+      patterns.forEach((pattern,index)=>{
+        for(let i=0;i<28;i++){
+          const row=pattern[9-Math.floor(i/28*10)];
+          [...row].forEach((cell,x)=>{
+            if(cell==='0')return;
+            const color=cell==='2'?0x263449:cell==='3'?0xf29cae:index===0?0x8fb9f5:0xf3b76e;
+            const voxel=new THREE.Mesh(new THREE.BoxGeometry(.085,.033,.28),material(color));
+            voxel.position.set((x-4)*.085,-.47+i*.033,0);
+            voxel.userData.layer=i;prints[index+1].add(voxel);
+          });
+        }
+      });
+      const ease=(value:number)=>{const t=Math.max(0,Math.min(1,value));return t*t*(3-2*t);};
       animateModel=time=>{
-        const progress=Math.min((time%9)/7.5,1),height=progress*23;
-        layers.forEach((layer,i)=>{layer.visible=i<=height;});
-        const angle=time*7.5,r=.19+.035*Math.sin(progress*Math.PI*2);
-        head.position.set(Math.cos(angle)*r,-.23+height*.024+.20,Math.sin(angle)*r);
-        nozzle.position.copy(head.position);nozzle.position.y-=.16;
-        rail.position.set(0,head.position.y+.07,head.position.z);
+        const phase=time%12,current=Math.floor(time/12)%3,progress=Math.min(phase/7,1),height=progress*27;
+        const present=.52*ease((phase-8)/.8)*(1-ease((phase-11)/.8));
+        const exit=ease((phase-10)/1);
+        const angle=time*9,r=radius(progress),park=ease((phase-7)/.7);
+        const scanX=current===0?Math.cos(angle)*r:Math.sin(angle)*.30;
+        const scanZ=current===0?Math.sin(angle)*r:Math.sin(angle*2)*.12;
+        // The bed supplies depth travel in the opposite direction to the toolpath.
+        const bedZ=present-scanZ*(1-park);
+        bed.position.z=surface.position.z=bedZ;
+        prints.forEach((print,index)=>{
+          print.visible=index===current&&phase<11;
+          print.position.set(exit*2.8,-exit*exit*.65,bedZ+exit*.6);
+          print.rotation.z=-exit*.35;
+          print.scale.setScalar(1-exit*.35);
+          print.children.forEach((part,i)=>{part.visible=(index===0?i:part.userData.layer)<=height;});
+        });
+        const x=scanX*(1-park)+.57*park;
+        const z=0;
+        const y=-.47+height*.033+.30+.18*park;
+        head.position.set(x,y,z);
+        fan.position.set(x,y,z+.20);
+        nozzle.position.set(x,y-.235,z);
+        rail.position.set(0,y+.08,-.25);
       };
     } else if (kind === 'the-screen') {
       block(1.65, 1.65, .23, 0, 0, 0, 0x263f3c); block(1.48, 1.48, .08, 0, 0, .15, 0x0f1623);
       const pixels:THREE.Mesh[]=[];
       for(let y=0;y<8;y++)for(let x=0;x<8;x++)pixels.push(block(.125,.125,.035,(x-3.5)*.18,(3.5-y)*.18,.21,0x253245));
       const alive=new THREE.MeshStandardMaterial({color:0x90e7d1,emissive:0x53cda8,emissiveIntensity:1,roughness:.6});extraMaterials.push(alive);
-      const seed=()=>Array.from({length:64},(_,i)=>[[1,0],[2,1],[0,2],[1,2],[2,2],[4,5],[5,5],[6,5]].some(([x,y])=>i===y*8+x)?1:0);
-      let cells=seed(),generation=-1;
+      const led=(color:number,intensity=1)=>{
+        const m=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:intensity,roughness:.6});
+        extraMaterials.push(m);return m;
+      };
+      const off=material(0x253245),paddle=led(0x328aff),ball=led(0xff55cb),net=led(0x174a88,.4);
+      const rain=[led(0xbaffff),led(0x28dfbe),led(0x139d80,.7),led(0x0b594d,.4)];
+      const seed=()=>Array.from({length:64},()=>Math.random()<.32?1:0);
+      const pongOffset={x:Math.random()*10,y:Math.random()*14};
+      const streams=Array.from({length:8},()=>({speed:2.5+Math.random()*3,offset:Math.random()*13}));
+      let cells=seed(),generation=-1,lastMode=-1,lastFrame=-1;
       animateModel=time=>{
-        const nextGeneration=Math.floor(time/.32);
+        // Eight seconds per slide, with the same frozen preview in reduced motion.
+        const mode=Math.floor(time/8)%3,local=time%8,frame=Math.floor(local*18);
+        if(mode!==lastMode){cells=seed();generation=-1;lastFrame=-1;lastMode=mode;}
+        if(mode!==0){
+          if(frame===lastFrame)return;
+          lastFrame=frame;pixels.forEach(pixel=>{pixel.material=off;});
+          const paint=(x:number,y:number,m:THREE.Material)=>{if(x>=0&&x<8&&y>=0&&y<8)pixels[y*8+x].material=m;};
+          if(mode===1){
+            for(let y=0;y<8;y+=2)paint(3,y,net);
+            // A reflected trajectory keeps the self-playing rally continuous.
+            const bounce=(value:number,span:number)=>span-Math.abs(value%(span*2)-span);
+            const x=1+bounce(pongOffset.x+local*3,5),y=bounce(pongOffset.y+local*2.2,7);
+            const left=Math.max(1,Math.min(6,Math.round(y+Math.sin(local*2)*.8)));
+            const right=Math.max(1,Math.min(6,Math.round(y+Math.cos(local*2)*.8)));
+            for(let dy=-1;dy<=1;dy++){paint(0,left+dy,paddle);paint(7,right+dy,paddle);}
+            paint(Math.round(x),Math.round(y),ball);
+          }else{
+            for(let x=0;x<8;x++){
+              const head=Math.floor(local*streams[x].speed+streams[x].offset)%13;
+              rain.forEach((m,tail)=>paint(x,head-tail,m));
+            }
+          }
+          return;
+        }
+        const nextGeneration=Math.floor(local/(.32/1.5));
         if(nextGeneration===generation)return;
         if(generation>=0){
           const next=cells.map((cell,i)=>{
@@ -122,7 +208,7 @@ export default function SaveIcon({ kind, active, reduced, image, variant }: { ki
         generation=nextGeneration;pixels.forEach((pixel,i)=>{pixel.material=cells[i]?alive:material(0x253245);});
       };
     } else {
-      block(1.5, .85, 1.1, 0, -.35, 0, 0xb9afbd); block(1.35, .18, 1.05, 0, .16, 0, 0xe7dbe0);
+      block(1.5, .85, 1.1, 0, -.35, 0, 0x303238); block(1.35, .18, 1.05, 0, .16, 0, 0x484b52);
       block(.97, .055, .05, 0, .15, .55, 0x343042);
       const drawings=[['0110110','1111111','1111111','0111110','0011100','0001000'],['1000001','1100011','1111111','1011101','1111111','0111110','0011100'],['0011100','0101010','1101011','0111110','0010100','0001000','0101000','0011000']];
       const receipts=drawings.map(drawing=>{
@@ -191,7 +277,7 @@ export default function SaveIcon({ kind, active, reduced, image, variant }: { ki
       } catch { setFailed(true);cancelAnimationFrame(frame); }
     };
     frame=requestAnimationFrame(tick);
-    return ()=>{cancelAnimationFrame(frame);layoutObserver?.disconnect();browser?.removeEventListener('scroll',layout,true);paperRenderer?.dispose();paperRenderer?.forceContextLoss();paperRenderer?.domElement.remove();scene.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});materials.forEach(m=>m.dispose());extraMaterials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());canvas.remove();};
-  }, [kind, variant]);
+    return ()=>{disposed=true;cancelAnimationFrame(frame);layoutObserver?.disconnect();browser?.removeEventListener('scroll',layout,true);paperRenderer?.dispose();paperRenderer?.forceContextLoss();paperRenderer?.domElement.remove();scene.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});materials.forEach(m=>m.dispose());extraMaterials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());canvas.remove();};
+  }, [kind, variant, image]);
   return <div className="save-icon" ref={host} aria-hidden="true">{failed && <img src={asset(image.replace(/\.mp4$/, '.png'))} alt="" />}</div>;
 }
