@@ -74,7 +74,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .about-panel { left: 18%; right: 18%; max-width: 750px; margin: 0 auto; }
 .about-panel h1, .project-intro h1 { font-weight: 400; font-size: clamp(1.6rem,3.5vw,3rem); margin: 0 0 22px; }
 .about-panel h1 { margin-bottom: 12px; }
-.about-panel > .about-role { margin: 0 0 24px; color: #aebce5; font-size: clamp(.9rem,1.5vw,1.0625rem); line-height: 1.5; }
+.about-panel .about-role { margin: 0 0 24px; color: #aebce5; font-size: clamp(.9rem,1.5vw,1.0625rem); line-height: 1.5; }
 .about-panel > p { font-size: 1.0625rem; line-height: 1.9; color: #b6b6ca; max-width: 650px; margin-bottom: 20px; }
 .about-interests { display: flex; gap: 12px 25px; flex-wrap: wrap; margin: 32px 0; color: #aeb3d2; font-size: .875rem; }.about-interests span:before { content: '·'; margin-right: 10px; color: #859eff; }
 .launch-link { text-decoration: none; display: inline-flex; align-items: center; gap: 36px; padding: 12px 0; min-height: 44px; color: #daddeb; border-bottom: 1px solid #646a98; font-size: 1rem; }.launch-link:hover { color: #b7caff; border-color: #b7caff; }.launch-link > span[aria-hidden] { color: #99b2f6; }
@@ -432,3 +432,16 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .social-button:hover { color:#e8ed81; background:#25365488; border-color:#a9bfde; }
 .social-button:focus-visible { outline:2px solid #e8ed81; outline-offset:4px; }
 @media (max-width:700px) { .about-socials { gap:10px; } .social-button { padding:10px 12px; gap:8px; font-size:.9rem; } .social-pixel-icon { width:24px; height:24px; } }
+
+.about-cats { width: 100%; height: clamp(120px, 20vw, 190px); pointer-events: none; overflow: hidden; margin: 4px auto 0; }
+.about-cats-scene { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; image-rendering: pixelated; }
+
+.about-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.about-heading-copy { flex: 1 0 auto; }
+.about-heading .about-role { margin-bottom: 0; }
+.about-heading .about-cats { flex: 1 1 45%; width: 45%; min-width: 0; height: 110px; margin: 0; }
+@media (max-width: 540px) {
+  .about-heading { flex-wrap: wrap; gap: 0; }
+  .about-heading-copy { flex-basis: 100%; }
+  .about-heading .about-cats { flex-basis: 100%; width: 100%; height: 100px; }
+}

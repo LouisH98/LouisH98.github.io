@@ -12,6 +12,7 @@ import ProjectDetail from './ProjectDetail';
 import Settings from './Settings';
 import { BOOT_DURATION } from '@/lib/console/timeline';
 import { Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
+import AboutCats from './AboutCats';
 import { about, browserProjects as projects, projectSections } from '@/lib/console/content';
 import { parseHash, routeHash, type Route } from '@/lib/console/navigation';
 import { ConsoleAudio } from '@/lib/console/audio';
@@ -230,8 +231,13 @@ export default function Console() {
           </nav>}
         </section>}
         {route.view === 'about' && <section className="about-panel scroll-panel">
-          <h1 tabIndex={-1} data-screen-heading><BitmapText>{about.intro}</BitmapText></h1>
-          <p className="about-role"><BitmapText>{about.role}</BitmapText></p>
+          <div className="about-heading">
+            <div className="about-heading-copy">
+              <h1 tabIndex={-1} data-screen-heading><BitmapText>{about.intro}</BitmapText></h1>
+              <p className="about-role"><BitmapText>{about.role}</BitmapText></p>
+            </div>
+            <AboutCats reduced={reduced} />
+          </div>
           {about.paragraphs.map(p=><p key={p}>{p}</p>)}
           <nav className="about-socials" aria-label="Social profiles">
             <a id="linkedin-profile" className="social-button" href={about.linkedin} target="_blank" rel="noreferrer"><SocialIcon kind="linkedin"/><BitmapText>LinkedIn</BitmapText><span className="sr-only"> (opens in a new tab)</span></a>
