@@ -229,6 +229,7 @@ export default function Console() {
         </section>}
         {route.view === 'about' && <section className="about-panel scroll-panel">
           <h1 tabIndex={-1} data-screen-heading><BitmapText>{about.intro}</BitmapText></h1>
+          <p className="about-role"><BitmapText>{about.role}</BitmapText></p>
           {about.paragraphs.map(p=><p key={p}>{p}</p>)}
           <nav className="about-socials" aria-label="Social profiles">
             <a id="linkedin-profile" className="social-button" href={about.linkedin} target="_blank" rel="noreferrer"><SocialIcon kind="linkedin"/><BitmapText>LinkedIn</BitmapText><span className="sr-only"> (opens in a new tab)</span></a>

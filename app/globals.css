@@ -73,6 +73,8 @@ button:focus-visible, a:focus-visible { outline: 1px solid #a5c5ff; outline-offs
 .eyebrow { font-size: .75rem; letter-spacing: .15em; color: #9ba0bd; margin-bottom: 18px; }
 .about-panel { left: 18%; right: 18%; max-width: 750px; margin: 0 auto; }
 .about-panel h1, .project-intro h1 { font-weight: 400; font-size: clamp(1.6rem,3.5vw,3rem); margin: 0 0 22px; }
+.about-panel h1 { margin-bottom: 12px; }
+.about-panel > .about-role { margin: 0 0 24px; color: #aebce5; font-size: clamp(.9rem,1.5vw,1.0625rem); line-height: 1.5; }
 .about-panel > p { font-size: 1.0625rem; line-height: 1.9; color: #b6b6ca; max-width: 650px; margin-bottom: 20px; }
 .about-interests { display: flex; gap: 12px 25px; flex-wrap: wrap; margin: 32px 0; color: #aeb3d2; font-size: .875rem; }.about-interests span:before { content: '·'; margin-right: 10px; color: #859eff; }
 .launch-link { text-decoration: none; display: inline-flex; align-items: center; gap: 36px; padding: 12px 0; min-height: 44px; color: #daddeb; border-bottom: 1px solid #646a98; font-size: 1rem; }.launch-link:hover { color: #b7caff; border-color: #b7caff; }.launch-link > span[aria-hidden] { color: #99b2f6; }

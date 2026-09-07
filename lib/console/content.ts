@@ -49,7 +49,8 @@ export const projects: Project[] = [
 export const about = {
   name: 'Louis',
   intro: 'Hi, I’m Louis.',
-  paragraphs: ['I build software, experiment with Raspberry Pi hardware, and make things with 3D printers.', 'My projects include a print scheduler, an LED display framework, and a receipt printer that takes messages and drawings over the internet.'],
+  role: 'Senior Software Engineer at Arm',
+  paragraphs: ['I build intuitive software that helps engineers get their work done, from data visualisation to performance-profiling tools.', 'Away from work, I tinker with home automation, get my hands dirty with small hardware projects, and sell 3D-printed plant pots.'],
   url: 'https://github.com/LouisH98',
   linkedin: 'https://www.linkedin.com/in/louish98/',
 };
