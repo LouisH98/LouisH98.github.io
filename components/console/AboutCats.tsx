@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { createCatRig, catSpinePose, catApproach, createCatLegMount, catWakeEyes, catBapWeight, catPawReach } from './catRig';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const ease = (n: number) => { const t = THREE.MathUtils.clamp(n, 0, 1); return t * t * (3 - 2 * t); };
@@ -91,17 +92,21 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
         block(body, [.70, .42, .62], [0, -.07, -.25], coat);
         block(body, [.42, .10, .44], [0, .34, -.15], coat);
       }
+      // Torso markings deform with the coat, keeping stripes on the surface.
+      const rig = createCatRig(body, body.children.filter((part): part is THREE.Mesh => part instanceof THREE.Mesh));
+      body.remove(head); rig.shoulders.add(head);
       const legs = [-1, 1].flatMap(side => [-1, 1].map(front => {
-        const leg = new THREE.Group(); leg.position.set(side * .22, -.19, front * .37); body.add(leg);
-        block(leg, [.18, .23, .19], [0, -.085, 0], coat);
-        block(leg, [.185, .065, .195], [0, -.12, 0], dark);
+        const leg = createCatLegMount(rig, front, side);
+        leg.rotation.order = 'YXZ';
+        const upperMesh = block(leg, [.18, .23, .19], [0, -.085, 0], coat);
+        const band = block(leg, [.185, .065, .195], [0, -.12, 0], dark);
         const knee = new THREE.Group(); knee.position.y = -.19; leg.add(knee);
-        block(knee, [.15, .19, .16], [0, -.075, 0], coat);
+        const lowerMesh = block(knee, [.15, .19, .16], [0, -.075, 0], coat);
         const paw = new THREE.Group(); paw.position.set(0, -.16, 0); knee.add(paw);
         block(paw, [.20, .15, .29], [0, 0, .05], ginger ? cream : 0x544638);
-        return { leg, knee, paw, front, side };
+        return { leg, knee, paw, front, side, upperMesh, lowerMesh, band };
       }));
-      const tail = new THREE.Group(); tail.position.set(0, .05, -.52); body.add(tail);
+      const tail = new THREE.Group(); tail.position.set(0, .05, -.17); rig.pelvis.add(tail);
       const segments: THREE.Group[] = []; let parent = tail;
       for (let i = 0; i < 9; i++) {
         const segment = new THREE.Group(); segment.position.z = i ? -.14 : 0; parent.add(segment);
@@ -111,11 +116,40 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
       }
       const shadowMaterial = new THREE.MeshBasicMaterial({ color: 0x0b1028, transparent: true, opacity: .24, depthWrite: false });
       const shadow = new THREE.Mesh(new THREE.CircleGeometry(.65, 24), shadowMaterial); shadow.rotation.x = -Math.PI / 2; shadow.scale.y = 1.35; shadow.position.y = -.035; root.add(shadow);
-      return { root, body, head, eyes, ears, legs, segments, shadow, ginger };
+      return { root, body, head, eyes, ears, legs, segments, shadow, ginger, rig };
     });
     const pointer = { x: 0, y: 0, present: false };
     const gaze = { yaw: 0, pitch: 0 };
     const headScreen = new THREE.Vector3();
+    const raycaster = new THREE.Raycaster();
+    const clickPoint = new THREE.Vector2();
+    const bap = { started: -Infinity, side: 1, target: new THREE.Vector3() };
+    const localTarget = new THREE.Vector3();
+    let interactionTime = 0, pumpkinWake = -Infinity;
+    const interactWithCats = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest('a, button, input, select')) return;
+      const bounds = surface.getBoundingClientRect();
+      clickPoint.set((event.clientX - bounds.left) / bounds.width * 2 - 1,
+        1 - (event.clientY - bounds.top) / bounds.height * 2);
+      scene.updateMatrixWorld(true); camera.updateMatrixWorld();
+      cats[1].rig.skins.forEach(skin => { skin.computeBoundingSphere(); });
+      raycaster.setFromCamera(clickPoint, camera);
+      if (raycaster.intersectObject(cats[1].root, true).some(hit => hit.object !== cats[1].shadow)) {
+        pumpkinWake = interactionTime;
+        return;
+      }
+      if (motion.current || time < 7.4 || interactionTime - bap.started < .45) return;
+      cats[0].head.getWorldPosition(headScreen).project(camera);
+      const x = bounds.left + (headScreen.x + 1) * .5 * bounds.width;
+      const y = bounds.top + (1 - headScreen.y) * .5 * bounds.height;
+      const radius = Math.min(85, THREE.MathUtils.clamp(bounds.width * .20, 130, 240) * .46);
+      if (Math.hypot(event.clientX - x, event.clientY - y) < radius) {
+        bap.started = interactionTime;
+        bap.side = event.clientX < x ? -1 : 1;
+        bap.target.set(clickPoint.x, clickPoint.y, headScreen.z).unproject(camera);
+      }
+    };
+    surface.addEventListener('click', interactWithCats);
     const trackPointer = (event: PointerEvent) => {
       pointer.present = event.pointerType === 'mouse';
       pointer.x = event.clientX; pointer.y = event.clientY;
@@ -132,10 +166,11 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
       const dt = previous ? Math.min((now - previous) / 1000, .05) : 0; previous = now;
       if (document.hidden) return;
       layout();
+      interactionTime += dt;
       if (!motion.current) time += dt;
-      cats.forEach(({ root, body, head, eyes, ears, legs, segments, shadow, ginger }, index) => {
+      cats.forEach(({ root, body, head, eyes, ears, legs, segments, shadow, ginger, rig }, index) => {
         const t = motion.current ? 15 : Math.max(0, time - index * 1.1);
-        const walk = Math.min(t / 4.8, 1), settle = ease((t - 5.2) / 2.2);
+        const settle = ease((t - 5.2) / 2.2);
         // Finish turning before lowering: forelegs yield, haunches tuck, then
         // the chin and tail come to rest. Separate timings avoid a rigid pivot.
         const lowerChest = ease((t - 6.0) / 1.15);
@@ -143,18 +178,12 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
         const curlHead = ease((t - 7.85) / 1.55);
         const wrapTail = ease((t - 7.4) / 1.9);
         const sleepy = ease((t - 8.7) / 1.1);
-        const moving = (1 - ease((t - 3.84) / .96)) * (motion.current ? 0 : 1);
-        // Constant travel through most of the walk, easing only as paws come to rest.
-        const arrival = (walk - .8) / .2;
-        const distance = walk < .8 ? walk / .9 : (.8 + .2 * (arrival - arrival * arrival / 2)) / .9;
-        const start = ginger ? entryRight : entryLeft;
-        const destination = ginger ? 1.55 : -1.55;
-        root.position.x = THREE.MathUtils.lerp(start, destination, distance);
-        root.rotation.y = (ginger ? -1 : 1) * (Math.PI / 2 * (1 - ease((t - 4.5) / 1.3)) + .25);
-        // Reference: Muybridge, Animal Locomotion plate 717 (trot to gallop).
-        // Use the easy diagonal trot, with two small rises per stride and a level
-        // head/back. Cadence stays independent of the responsive entrance width.
-        const stride = distance * (ginger ? 9.5 : 10.5) * Math.PI * 2;
+        const approach = catApproach(t, ginger ? entryRight : entryLeft, ginger);
+        const moving = motion.current ? 0 : approach.moving;
+        root.position.set(approach.x, 0, approach.z);
+        root.rotation.y = approach.yaw;
+        // Keep stepping throughout the bend; face the actual direction of travel.
+        const stride = approach.gait * Math.PI * 2;
         const flight = (1 - Math.cos(stride * 2)) * .5;
         const bounce = flight * .035 * moving;
         const pitch = Math.sin(stride * 2 - .4) * .018 * moving;
@@ -171,11 +200,16 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
         }
         body.scale.set(1 + (ginger ? tuckHips * .14 : 0),
           1 + breath, 1 - (ginger ? tuckHips : settle) * .07);
-        head.position.set(ginger ? curlHead * .20 : 0,
+        const pose = catSpinePose(t, ginger);
+        const flex = Math.sin(stride * 2) * .022 * moving;
+        rig.pelvis.rotation.set(pose[0] - flex * .4, 0, 0);
+        rig.spine.rotation.set(pose[1] + flex, pose[2], 0);
+        rig.shoulders.rotation.set(pose[3] - flex * .6, pose[4], 0);
+        head.position.set(ginger ? curlHead * .10 : 0,
           .28 - (ginger ? .07 * lowerChest + .25 * curlHead : 0) - bounce * .8,
-          .52 - (ginger ? .035 * curlHead : 0));
+          .17 - (ginger ? .035 * curlHead : 0));
         head.rotation.set((ginger ? .12 * lowerChest * (1 - curlHead) - .12 * curlHead : settle * .66) - pitch * .65 + Math.sin(stride - .9) * .008 * moving,
-          (ginger ? -.55 * curlHead : 0) + Math.sin(t * .65) * .045 * (motion.current ? 0 : ginger ? 1 - curlHead : 1),
+          (ginger ? -.16 * curlHead : 0) + Math.sin(t * .65) * .045 * (motion.current ? 0 : ginger ? 1 - curlHead : 1),
           -body.rotation.z * .6);
         if (!ginger) {
           let yawTarget = 0, pitchTarget = 0;
@@ -201,7 +235,8 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
           head.rotation.y += gaze.yaw;
           head.rotation.x += gaze.pitch;
         }
-        legs.forEach(({ leg, knee, paw, front, side }) => {
+        legs.forEach(({ leg, knee, paw, front, side, upperMesh, lowerMesh, band }) => {
+          leg.rotation.set(0, 0, 0);
           // Diagonal partners share contact timing. Each paw travels backward
           // along the floor, then lifts in a low arc for its recovery stroke.
           const phase = ((stride / (Math.PI * 2) + (front === side ? 0 : .5)) % 1 + 1) % 1;
@@ -209,7 +244,16 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
           const recovery = Math.max(0, (phase - contact) / (1 - contact));
           const footZ = phase < contact ? .14 - .28 * phase / contact : -.14 + .28 * ease(recovery);
           const lift = phase < contact ? 0 : Math.sin(recovery * Math.PI) ** 2 * .105;
-          leg.position.y = -.19 - (!ginger && front > 0 ? settle * .30 : 0);
+          // Extend connected forelegs as Luna sits; never translate the entire
+          // leg away from the shoulder to reach the ground.
+          const extension = !ginger && front > 0 ? 1 + settle * .90 : 1;
+          // Lengthen the segments, not the joint coordinate system: nonuniform
+          // scale on a rotating shoulder shears the elbow during a reach.
+          upperMesh.scale.y = .23 * extension; upperMesh.position.y = -.085 * extension;
+          band.position.y = -.12 * extension;
+          knee.position.y = -.19 * extension;
+          lowerMesh.scale.y = .19 * extension; lowerMesh.position.y = -.075 * extension;
+          paw.position.y = -.16 * extension;
           // Solve the two leg joints from the paw position instead of swinging
           // disconnected joints. Compensate for body bounce to preserve contact.
           const targetY = .075 - (.56 + bounce) + lift;
@@ -244,6 +288,22 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
             knee.rotation.x = bend * moving + restingBend * (1 - moving);
             paw.rotation.x = -(leg.rotation.x + knee.rotation.x + restingPitch);
           }
+          const mountPitch = rig.pelvis.rotation.x + (front > 0 ? rig.spine.rotation.x + rig.shoulders.rotation.x : 0);
+          leg.rotation.x -= mountPitch;
+          if (!ginger && front > 0 && side === bap.side && !motion.current) {
+            const reach = catBapWeight(interactionTime - bap.started);
+            if (reach > 0) {
+              localTarget.copy(bap.target);
+              leg.parent!.worldToLocal(localTarget).sub(leg.position);
+              const joints = catPawReach(localTarget, .19 * extension, .16 * extension);
+              leg.rotation.x = THREE.MathUtils.lerp(leg.rotation.x, joints.shoulder, reach);
+              leg.rotation.y = joints.yaw * reach;
+              knee.rotation.x = THREE.MathUtils.lerp(knee.rotation.x, joints.elbow, reach);
+              // A small wrist flex makes a soft tap, rather than a stiff paddle.
+              const wrist = -.25 - .22 * Math.sin(Math.min(1, (interactionTime - bap.started) / .28) * Math.PI);
+              paw.rotation.x = THREE.MathUtils.lerp(paw.rotation.x, wrist, reach);
+            }
+          }
         });
         segments.forEach((segment, i) => {
           segment.rotation.x = -.16 * (1 - (ginger ? wrapTail : settle))
@@ -256,7 +316,11 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
         shadow.scale.set(1 - flight * .15 * moving, 1.35 - flight * .18 * moving, 1);
         shadow.material.opacity = .24 - flight * .09 * moving;
         const blink = motion.current ? 1 : 1 - .95 * Math.max(0, 1 - Math.abs((t + index * 2.7) % 5.3 - 4.9) / .12);
-        eyes.forEach(eye => { eye.scale.y = (ginger ? (1 - sleepy) * blink + sleepy * .10 : blink); });
+        const wake = ginger ? catWakeEyes(interactionTime - pumpkinWake, motion.current) : 0;
+        eyes.forEach(eye => {
+          const resting = ginger ? (1 - sleepy) * blink + sleepy * .10 : blink;
+          eye.scale.y = THREE.MathUtils.lerp(resting, 1, wake);
+        });
         ears.forEach((ear, i) => {
           ear.rotation.x = Math.sin(stride - 1.2) * .025 * moving;
           ear.rotation.z = motion.current ? 0 : Math.sin(t * 2 + i) * .12 * Math.max(0, Math.sin(t * .7 + index) - .8);
@@ -266,12 +330,13 @@ export default function AboutCats({ reduced }: { reduced: boolean }) {
     };
     frame = requestAnimationFrame(render);
     return () => {
+      surface.removeEventListener('click', interactWithCats);
       surface.removeEventListener('pointermove', trackPointer);
       surface.removeEventListener('pointerleave', releasePointer);
       window.removeEventListener('blur', releasePointer);
       document.removeEventListener('visibilitychange', visibility);
       cancelAnimationFrame(frame); geometry.dispose(); earGeometry.dispose(); materials.forEach(material => material.dispose());
-      cats.forEach(cat => { cat.shadow.geometry.dispose(); cat.shadow.material.dispose(); });
+      cats.forEach(cat => { cat.rig.dispose(); cat.shadow.geometry.dispose(); cat.shadow.material.dispose(); });
       renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove();
     };
   }, []);
