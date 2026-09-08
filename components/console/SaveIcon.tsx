@@ -120,7 +120,7 @@ export default function SaveIcon({ kind, active, reduced, image, variant }: { ki
       patterns.forEach((pattern,index)=>{
         for(let i=0;i<28;i++){
           const row=pattern[9-Math.floor(i/28*10)];
-          [...row].forEach((cell,x)=>{
+          Array.from(row).forEach((cell,x)=>{
             if(cell==='0')return;
             const color=cell==='2'?0x263449:cell==='3'?0xf29cae:index===0?0x8fb9f5:0xf3b76e;
             const voxel=new THREE.Mesh(new THREE.BoxGeometry(.085,.033,.28),material(color));
